@@ -1,0 +1,3618 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mekong Pathfinder | Giải pháp đô thị bền vững</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #2f4fd4;
+            --primary-light: #6b83f5;
+            --primary-dim: rgba(67, 97, 238, 0.10);
+            --primary-glow: rgba(67, 97, 238, 0.22);
+            --wave1: #4361ee;
+            --wave2: #3a56d4;
+            --wave3: #3251c8;
+            --secondary: #00b4d8;
+            --secondary-dim: rgba(0, 180, 216, 0.10);
+            --red: #ef233c;
+            --yellow: #f4a261;
+            --teal: #06d6a0;
+            --green: #2dc653;
+            --pink: #e040fb;
+
+            /* LIGHT palette */
+            --bg: #ffffff;
+            --bg2: #f0f7ff;
+            --bg3: #e8f0fe;
+            --bg-card: #ffffff;
+            --bg-card2: #f7faff;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(67, 97, 238, 0.12);
+            --glass-hover: rgba(67, 97, 238, 0.22);
+            --text: #0d1117;
+            --text-muted: #4a5568;
+            --text-dim: #8a97aa;
+            --border: rgba(0, 0, 0, 0.07);
+            --shadow: 0 2px 16px rgba(67, 97, 238, 0.08);
+            --shadow-lg: 0 8px 40px rgba(67, 97, 238, 0.14);
+
+            --font: 'Be Vietnam Pro', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════HEADER═══════════════════════ */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 0 rgba(67, 97, 238, 0.06);
+        }
+
+        .header-inner {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 12px var(--primary-glow);
+        }
+
+        .logo-pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+            animation: pulse-dot 2s ease-in-out infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.65);
+            }
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        nav a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--text);
+        }
+
+        .btn-nav {
+            padding: 8px 20px;
+            border-radius: 100px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font);
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 12px var(--primary-glow);
+        }
+
+        .btn-nav:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ══════════════════════HERO═══════════════════════ */
+        #hero {
+            position: relative;
+            min-height: 100vh;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding-top: 64px;
+        }
+
+        /* 3D canvas lives in top half */
+        #hero-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.7;
+            /* subtle — text is king in light mode */
+            pointer-events: none;
+        }
+
+        /* Content above waves */
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 60px 24px 180px;
+            /* bottom pad leaves room for waves */
+            width: 100%;
+            max-width: 900px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 100px;
+            border: 1.5px solid rgba(67, 97, 238, 0.2);
+            background: rgba(255, 255, 255, 0.85);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            color: var(--primary);
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            opacity: 0;
+            animation: fade-up 0.7s ease 0.2s forwards;
+            box-shadow: 0 2px 10px rgba(67, 97, 238, 0.05);
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .hero-title {
+            font-size: clamp(44px, 7vw, 88px);
+            font-weight: 900;
+            line-height: 1.0;
+            letter-spacing: -0.03em;
+            color: #0d1117;
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fade-up 0.7s ease 0.4s forwards;
+            text-shadow: 0 0 16px rgba(255, 255, 255, 0.95), 0 0 8px rgba(255, 255, 255, 0.9);
+        }
+
+        .hero-title .accent {
+            color: var(--primary);
+        }
+
+        .hero-sub {
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-muted);
+            max-width: 520px;
+            margin: 0 auto 40px;
+            opacity: 0;
+            animation: fade-up 0.7s ease 0.6s forwards;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.95), 0 0 6px rgba(255, 255, 255, 0.9);
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            opacity: 0;
+            animation: fade-up 0.7s ease 0.8s forwards;
+            pointer-events: all;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: var(--font);
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--primary-glow);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: var(--font);
+            background: transparent;
+            color: var(--text);
+            border: 1.5px solid rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        @keyframes fade-up {
+            from {
+                opacity: 0;
+                transform: translateY(22px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ═══ WAVES ═══
+   3 stacked SVG waves at the bottom of hero
+   matching the screenshot exactly
+*/
+        .hero-waves {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            pointer-events: none;
+            z-index: 5;
+            height: 340px;
+        }
+
+        .wave-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        /* Scene HUD — below hero actions */
+        .scene-hud {
+            margin-top: 40px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            animation: fade-up 0.7s ease 1.2s forwards;
+            pointer-events: all;
+        }
+
+        .scene-title-display {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+        }
+
+        .scene-dots {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .scene-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(67, 97, 238, 0.2);
+            border: 1.5px solid rgba(67, 97, 238, 0.3);
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+
+        .scene-dot.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+            width: 22px;
+            border-radius: 10px;
+        }
+
+        .scroll-hint {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+        }
+
+        /* Status HUD */
+        .status-hud {
+            position: absolute;
+            top: 80px;
+            right: 32px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            animation: fade-up 0.6s ease 1.4s forwards;
+        }
+
+        .hud-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 11px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 190px;
+            transition: opacity 0.5s ease;
+        }
+
+        .hud-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .hud-dot.green {
+            background: var(--green);
+            box-shadow: 0 0 5px var(--green);
+        }
+
+        .hud-dot.red {
+            background: var(--red);
+            box-shadow: 0 0 5px var(--red);
+            animation: blink 1s infinite;
+        }
+
+        .hud-dot.blue {
+            background: var(--primary);
+            box-shadow: 0 0 5px var(--primary);
+        }
+
+        .hud-dot.yellow {
+            background: var(--yellow);
+            box-shadow: 0 0 5px var(--yellow);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.2
+            }
+        }
+
+        .hud-text {
+            color: var(--text);
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .hud-sub {
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-top: 1px;
+        }
+
+        /* Stack subsequent sections on top of sticky hero */
+        .section-story,
+        .section-problem,
+        .section-benefits,
+        .section-gallery,
+        .section-solution,
+        .section-cta,
+        footer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* ═══════════════════════
+   STORY SECTION
+═══════════════════════ */
+        .section-story {
+            background: linear-gradient(180deg, var(--wave1) 0%, #3251c8 100%);
+            padding: 100px 40px;
+            color: #fff;
+        }
+
+        .story-inner {
+            max-width: 1042px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .story-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 32px;
+        }
+
+        .story-eyebrow::before,
+        .story-eyebrow::after {
+            content: '';
+            display: block;
+            width: 32px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .story-quote {
+            font-size: clamp(22px, 3vw, 38px);
+            font-weight: 800;
+            line-height: 1.3;
+            letter-spacing: -0.02em;
+            margin-bottom: 28px;
+            color: #fff;
+        }
+
+        .story-quote em {
+            font-style: normal;
+            color: #a5c8ff;
+        }
+
+        .story-body {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.8;
+            max-width: 650px;
+            margin: 0 auto 52px;
+        }
+
+        .story-stats {
+            display: flex;
+            flex-wrap: wrap;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 160px;
+            padding: 28px 24px;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .stat-item:last-child {
+            border-right: none;
+        }
+
+        .stat-num {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.65);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* ═══════════════════════
+   PROBLEM SECTION
+═══════════════════════ */
+        .section-problem {
+            padding: 100px 40px;
+            background:
+                linear-gradient(180deg, #ffffff 0%, #f3f8ff 48%, #ffffff 100%);
+            overflow: hidden;
+        }
+
+        .section-inner {
+            max-width: 1160px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            margin-bottom: 56px;
+        }
+
+        .eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: clamp(30px, 4vw, 52px);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+            color: var(--text);
+        }
+
+        .section-title span {
+            color: var(--primary);
+        }
+
+        .section-desc {
+            font-size: 17px;
+            color: var(--text-muted);
+            margin-top: 16px;
+            max-width: 540px;
+            line-height: 1.7;
+        }
+
+        .section-problem .section-header {
+            max-width: 760px;
+        }
+
+        .problem-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin: -24px 0 28px;
+        }
+
+        .problem-summary-item {
+            min-height: 84px;
+            padding: 18px 20px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(67, 97, 238, 0.12);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .problem-summary-item strong {
+            display: block;
+            font-size: 24px;
+            line-height: 1;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .problem-summary-item span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .problems-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .problem-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(67, 97, 238, 0.12);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+            cursor: default;
+            box-shadow: 0 8px 30px rgba(31, 45, 89, 0.05);
+        }
+
+        .problem-card:hover {
+            border-color: rgba(67, 97, 238, 0.34);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .problem-img {
+            --problem-accent: var(--primary);
+            --problem-accent-soft: rgba(67, 97, 238, 0.12);
+            min-height: 150px;
+            position: relative;
+            overflow: hidden;
+            padding: 18px;
+            background:
+                linear-gradient(90deg, rgba(13, 17, 23, 0.05) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(13, 17, 23, 0.05) 1px, transparent 1px),
+                linear-gradient(135deg, #ffffff, var(--problem-accent-soft));
+            background-size: 28px 28px, 28px 28px, 100% 100%;
+        }
+
+        .problem-card.red .problem-img {
+            --problem-accent: var(--red);
+            --problem-accent-soft: rgba(239, 35, 60, 0.12);
+        }
+
+        .problem-card.yellow .problem-img {
+            --problem-accent: #d97706;
+            --problem-accent-soft: rgba(244, 162, 97, 0.18);
+        }
+
+        .problem-card.teal .problem-img {
+            --problem-accent: #059669;
+            --problem-accent-soft: rgba(6, 214, 160, 0.14);
+        }
+
+        .problem-card.pink .problem-img {
+            --problem-accent: #9333ea;
+            --problem-accent-soft: rgba(224, 64, 251, 0.12);
+        }
+
+        .problem-img::after {
+            content: "";
+            position: absolute;
+            left: -8%;
+            right: -8%;
+            bottom: -28px;
+            height: 92px;
+            background: var(--problem-accent);
+            opacity: 0.14;
+            clip-path: polygon(0 56%, 12% 45%, 26% 60%, 39% 36%, 53% 50%, 68% 30%, 82% 46%, 100% 22%, 100% 100%, 0 100%);
+        }
+
+        .problem-signal {
+            position: absolute;
+            right: 18px;
+            top: 18px;
+            width: 96px;
+            height: 58px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.86);
+            border-radius: 8px;
+            box-shadow: 0 12px 26px rgba(31, 45, 89, 0.08);
+        }
+
+        .problem-signal span {
+            flex: 1;
+            border-radius: 4px 4px 0 0;
+            background: var(--problem-accent);
+            opacity: 0.86;
+        }
+
+        .problem-signal span:nth-child(1) {
+            height: 30%;
+            opacity: 0.32;
+        }
+
+        .problem-signal span:nth-child(2) {
+            height: 55%;
+            opacity: 0.56;
+        }
+
+        .problem-signal span:nth-child(3) {
+            height: 82%;
+        }
+
+        .problem-img-label {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 6px 10px;
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.82);
+            color: var(--problem-accent);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+        }
+
+        .problem-stat {
+            position: absolute;
+            left: 18px;
+            bottom: 18px;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .problem-stat strong {
+            font-size: 28px;
+            line-height: 1;
+            color: var(--text);
+        }
+
+        .problem-stat span {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .problem-body {
+            padding: 24px 24px 26px;
+        }
+
+        .problem-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .problem-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.65;
+        }
+
+        .section-benefits {
+            padding: 100px 40px;
+            background: linear-gradient(180deg, #ffffff 0%, #eef6ff 52%, #ffffff 100%);
+            overflow: hidden;
+        }
+
+        .benefits-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 84px;
+        }
+
+        .benefit-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+            gap: 72px;
+            align-items: center;
+        }
+
+        .benefit-row.reverse {
+            grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+        }
+
+        .benefit-row.reverse .benefit-copy {
+            order: 2;
+        }
+
+        .benefit-row.reverse .benefit-visual {
+            order: 1;
+        }
+
+        .benefit-copy h3 {
+            font-size: clamp(28px, 3.6vw, 48px);
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -0.025em;
+            margin-bottom: 14px;
+        }
+
+        .benefit-copy>p {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.7;
+            max-width: 560px;
+        }
+
+        .benefit-points {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            margin-top: 34px;
+        }
+
+        .benefit-point {
+            display: grid;
+            grid-template-columns: 46px minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .benefit-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.10);
+            border: 1px solid rgba(67, 97, 238, 0.14);
+        }
+
+        .benefit-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .benefit-point h4 {
+            font-size: 17px;
+            line-height: 1.35;
+            margin-bottom: 4px;
+        }
+
+        .benefit-point p {
+            font-size: 14px;
+            line-height: 1.65;
+            color: var(--text-muted);
+        }
+
+        .benefit-visual {
+            display: flex;
+            justify-content: center;
+        }
+
+        .feature-phone {
+            width: min(100%, 292px);
+            min-height: 560px;
+            padding: 14px;
+            border-radius: 38px;
+            background: #0d1117;
+            box-shadow: 0 28px 70px rgba(67, 97, 238, 0.20);
+            border: 1px solid rgba(13, 17, 23, 0.12);
+            position: relative;
+        }
+
+        .feature-phone::before {
+            content: "";
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            width: 76px;
+            height: 20px;
+            border-radius: 999px;
+            transform: translateX(-50%);
+            background: #05070c;
+            z-index: 2;
+        }
+
+        .feature-screen {
+            min-height: 532px;
+            border-radius: 28px;
+            padding: 48px 18px 18px;
+            background:
+                radial-gradient(circle at 30% 12%, rgba(0, 180, 216, 0.22), transparent 32%),
+                linear-gradient(180deg, #f8fbff 0%, #eaf3ff 100%);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #111827;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .screen-pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #fff;
+            background: var(--primary);
+            font-size: 10px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .mini-map {
+            height: 190px;
+            border-radius: 22px;
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(90deg, rgba(67, 97, 238, 0.10) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(67, 97, 238, 0.10) 1px, transparent 1px),
+                linear-gradient(135deg, #dbeafe, #f8fafc);
+            background-size: 26px 26px, 26px 26px, 100% 100%;
+            border: 1px solid rgba(67, 97, 238, 0.16);
+        }
+
+        .mini-route {
+            position: absolute;
+            inset: 36px 28px;
+            border-bottom: 5px solid var(--green);
+            border-left: 5px solid var(--green);
+            border-radius: 0 0 0 32px;
+        }
+
+        .mini-flood {
+            position: absolute;
+            width: 96px;
+            height: 96px;
+            right: 24px;
+            bottom: 24px;
+            border-radius: 50%;
+            background: rgba(239, 35, 60, 0.18);
+            border: 1px solid rgba(239, 35, 60, 0.28);
+        }
+
+        .mini-pin {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 0 8px rgba(67, 97, 238, 0.14);
+        }
+
+        .mini-pin.one {
+            left: 42px;
+            top: 48px;
+        }
+
+        .mini-pin.two {
+            right: 62px;
+            top: 74px;
+            background: var(--red);
+            box-shadow: 0 0 0 8px rgba(239, 35, 60, 0.14);
+        }
+
+        .screen-cards {
+            display: grid;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .screen-card {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(67, 97, 238, 0.12);
+            box-shadow: 0 12px 28px rgba(31, 45, 89, 0.08);
+        }
+
+        .screen-card strong {
+            display: block;
+            color: #111827;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .screen-card span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .section-demo {
+            padding: 100px 40px;
+            background: linear-gradient(180deg, #ffffff 0%, #f7faff 48%, #ffffff 100%);
+            overflow: hidden;
+        }
+
+        .demo-shell {
+            border: 1px solid rgba(67, 97, 238, 0.12);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .demo-tabs {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 1px;
+            background: rgba(67, 97, 238, 0.10);
+            border-bottom: 1px solid rgba(67, 97, 238, 0.12);
+        }
+
+        .demo-tab {
+            appearance: none;
+            border: 0;
+            min-height: 58px;
+            padding: 12px 10px;
+            background: #ffffff;
+            color: var(--text-muted);
+            font: 700 12px/1.25 var(--font);
+            cursor: pointer;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .demo-tab.active {
+            color: var(--primary);
+            background: #f0f6ff;
+        }
+
+        .demo-body {
+            position: relative;
+            min-height: 520px;
+        }
+
+        .demo-panel {
+            display: none;
+            padding: 26px;
+        }
+
+        .demo-panel.active {
+            display: block;
+        }
+
+        .dp-layout {
+            display: grid;
+            grid-template-columns: 330px minmax(0, 1fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .dp-info {
+            padding: 22px;
+            border-radius: 8px;
+            background: #f8fbff;
+            border: 1px solid rgba(67, 97, 238, 0.10);
+        }
+
+        .dp-tag {
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .dp-title {
+            font-size: clamp(26px, 3vw, 38px);
+            line-height: 1.12;
+            letter-spacing: -0.025em;
+            margin-bottom: 12px;
+        }
+
+        .dp-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+
+        .dp-features,
+        .alert-mini-list,
+        .net-kpi-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .dp-feat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .dp-feat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dp-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 18px;
+        }
+
+        .dp-btn {
+            border: 1px solid rgba(67, 97, 238, 0.16);
+            background: #fff;
+            color: var(--text);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font: 700 12px var(--font);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, background 0.2s;
+        }
+
+        .dp-btn:hover,
+        .dp-btn.active {
+            transform: translateY(-1px);
+            border-color: rgba(67, 97, 238, 0.34);
+            background: #edf4ff;
+            color: var(--primary);
+        }
+
+        .dp-btn.primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .dp-update,
+        .dp-input-label {
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 12px;
+        }
+
+        .dp-select,
+        .dp-compose textarea {
+            width: 100%;
+            border: 1px solid rgba(67, 97, 238, 0.14);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+            font: 600 13px var(--font);
+            padding: 11px 12px;
+            outline: none;
+        }
+
+        .dp-screen {
+            border: 1px solid rgba(67, 97, 238, 0.14);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            min-height: 460px;
+            box-shadow: 0 18px 42px rgba(31, 45, 89, 0.08);
+        }
+
+        .dp-screen-bar {
+            height: 46px;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(67, 97, 238, 0.10);
+            background: #f8fbff;
+        }
+
+        .dp-screen-dots {
+            display: flex;
+            gap: 5px;
+        }
+
+        .dp-screen-dots span {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #cbd5e1;
+        }
+
+        .dp-screen-title {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+            flex: 1;
+        }
+
+        .dp-live-badge {
+            padding: 5px 8px;
+            border-radius: 999px;
+            background: rgba(239, 35, 60, 0.10);
+            color: var(--red);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .real-map {
+            height: 430px;
+            width: 100%;
+            background: #eef3fc;
+            z-index: 1;
+        }
+
+        .map-fallback {
+            height: 430px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            background: #eef3fc;
+        }
+
+        .leaflet-container {
+            font-family: var(--font);
+        }
+
+        .demo-marker {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+        }
+
+        .demo-marker.flood {
+            background: var(--red);
+        }
+
+        .demo-marker.warn {
+            background: var(--yellow);
+        }
+
+        .demo-marker.safe {
+            background: var(--green);
+        }
+
+        .route-demo {
+            height: 430px;
+            padding: 18px;
+            background: #eef3fc;
+        }
+
+        .route-stats,
+        .dash-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .rs-item,
+        .kpi-card,
+        .nkpi {
+            border: 1px solid rgba(67, 97, 238, 0.10);
+            border-radius: 8px;
+            padding: 12px;
+            background: #fff;
+        }
+
+        .rs-val,
+        .kpi-num,
+        .nkpi-val {
+            color: var(--primary);
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .rs-val.red,
+        .kpi-card.red .kpi-num,
+        .dmp-val.red {
+            color: var(--red);
+        }
+
+        .rs-val.green,
+        .kpi-card.green .kpi-num,
+        .dmp-val.green {
+            color: var(--green);
+        }
+
+        .rs-label,
+        .kpi-label,
+        .nkpi-label,
+        .kpi-sub {
+            color: var(--text-muted);
+            font-size: 11px;
+            margin-top: 6px;
+        }
+
+        .forecast-wrap,
+        .dashboard-wrap,
+        .network-wrap {
+            min-height: 430px;
+            padding: 18px;
+            background: #f7faff;
+        }
+
+        .forecast-bars {
+            height: 220px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .fcast-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .fcast-bar {
+            width: 100%;
+            border-radius: 8px 8px 3px 3px;
+            background: var(--primary);
+            min-height: 8px;
+        }
+
+        .fcast-lbl {
+            color: var(--text-muted);
+            text-align: center;
+            font-size: 10px;
+            line-height: 1.3;
+            font-weight: 700;
+        }
+
+        .notif-list,
+        .community-feed,
+        .dash-bottom-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .notif-card,
+        .aml-item,
+        .cf-item,
+        .dash-mini-panel,
+        .crew-row {
+            border-radius: 8px;
+            border: 1px solid rgba(67, 97, 238, 0.10);
+            background: #fff;
+        }
+
+        .notif-card {
+            padding: 12px;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .notif-card.high {
+            border-color: rgba(239, 35, 60, 0.22);
+            background: rgba(239, 35, 60, 0.05);
+        }
+
+        .notif-card.medium {
+            border-color: rgba(244, 162, 97, 0.24);
+            background: rgba(244, 162, 97, 0.08);
+        }
+
+        .notif-card.low {
+            border-color: rgba(45, 198, 83, 0.22);
+            background: rgba(45, 198, 83, 0.06);
+        }
+
+        .aml-item,
+        .cf-item,
+        .crew-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .aml-sev,
+        .cf-avatar,
+        .crew-av {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .aml-sev.high {
+            background: var(--red);
+        }
+
+        .aml-sev.medium {
+            background: var(--yellow);
+        }
+
+        .aml-sev.low {
+            background: var(--green);
+        }
+
+        .aml-title,
+        .cf-name,
+        .crew-nm,
+        .dmp-title {
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .aml-sub,
+        .cf-loc,
+        .crew-tk {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .community-feed {
+            min-height: 430px;
+            padding: 18px;
+            background: #f7faff;
+        }
+
+        .cf-avatar,
+        .crew-av {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .cf-header {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .cf-text {
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.55;
+            margin: 6px 0 8px;
+        }
+
+        .cf-badge,
+        .crew-st {
+            display: inline-flex;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 800;
+            background: rgba(45, 198, 83, 0.10);
+            color: #11844b;
+        }
+
+        .cf-badge.checking,
+        .crew-st.enroute {
+            background: rgba(244, 162, 97, 0.12);
+            color: #9a5b0d;
+        }
+
+        .dash-kpi-grid {
+            grid-template-columns: repeat(4, 1fr);
+            margin-top: 0;
+            margin-bottom: 14px;
+        }
+
+        .dash-bottom-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .dash-mini-panel {
+            padding: 14px;
+        }
+
+        .dmp-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(67, 97, 238, 0.08);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .dmp-row:last-child {
+            border-bottom: 0;
+        }
+
+        .dmp-val,
+        .crew-st.active {
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        .network-map {
+            height: 430px;
+        }
+
+        /* ═══════════════════════
+   GALLERY
+═══════════════════════ */
+        .section-gallery {
+            padding: 80px 0;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gallery-aura {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .aura-1 {
+            width: 360px;
+            height: 360px;
+            background: rgba(67, 97, 238, 0.08);
+            top: -80px;
+            left: -60px;
+        }
+
+        .aura-2 {
+            width: 280px;
+            height: 280px;
+            background: rgba(0, 180, 216, 0.07);
+            bottom: -60px;
+            right: 80px;
+        }
+
+        .gallery-header {
+            text-align: center;
+            margin-bottom: 48px;
+            padding: 0 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .gallery-header h2 {
+            font-size: clamp(24px, 3vw, 40px);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+
+        .marquee-wrap {
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 16px;
+            animation: marquee-left 32s linear infinite;
+            width: max-content;
+        }
+
+        .marquee-track2 {
+            display: flex;
+            gap: 16px;
+            animation: marquee-right 26s linear infinite;
+            width: max-content;
+            margin-top: 16px;
+        }
+
+        @keyframes marquee-left {
+            from {
+                transform: translateX(0)
+            }
+
+            to {
+                transform: translateX(-50%)
+            }
+        }
+
+        @keyframes marquee-right {
+            from {
+                transform: translateX(-50%)
+            }
+
+            to {
+                transform: translateX(0)
+            }
+        }
+
+        .gallery-card {
+            flex-shrink: 0;
+            width: 260px;
+            height: 155px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1.5px solid rgba(67, 97, 238, 0.12);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--bg-card2);
+        }
+
+        .gallery-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .gallery-card-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            position: relative;
+        }
+
+        .gallery-card-label {
+            position: absolute;
+            bottom: 10px;
+            left: 12px;
+            right: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* ═══════════════════════
+   SOLUTION SECTION
+═══════════════════════ */
+        .section-solution {
+            padding: 100px 40px;
+            background: var(--bg2);
+        }
+
+        .solution-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .solution-features {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .solution-feat {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 18px 20px;
+            border-radius: 16px;
+            border: 1.5px solid transparent;
+            transition: all 0.25s;
+            cursor: default;
+        }
+
+        .solution-feat:hover {
+            background: var(--bg-card);
+            border-color: rgba(67, 97, 238, 0.15);
+            box-shadow: var(--shadow);
+        }
+
+        .feat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .feat-icon.blue {
+            background: rgba(67, 97, 238, 0.10);
+        }
+
+        .feat-icon.cyan {
+            background: rgba(0, 180, 216, 0.10);
+        }
+
+        .feat-icon.green {
+            background: rgba(45, 198, 83, 0.10);
+        }
+
+        .feat-icon.red {
+            background: rgba(239, 35, 60, 0.09);
+        }
+
+        .feat-icon.pink {
+            background: rgba(224, 64, 251, 0.09);
+        }
+
+        .feat-icon.teal {
+            background: rgba(6, 214, 160, 0.10);
+        }
+
+        .feat-body h4 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .feat-body p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Phone mockup */
+        .solution-mockup {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .phone-frame {
+            width: 256px;
+            border-radius: 40px;
+            border: 2px solid rgba(67, 97, 238, 0.2);
+            background: #f8faff;
+            box-shadow: 0 0 0 1px rgba(67, 97, 238, 0.08), 0 24px 60px rgba(67, 97, 238, 0.18), 0 40px 80px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+
+        .phone-notch {
+            height: 26px;
+            background: #f8faff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .phone-notch-bar {
+            width: 80px;
+            height: 14px;
+            border-radius: 10px;
+            background: #e8eef8;
+        }
+
+        .phone-screen {
+            background: #eef3fc;
+            padding: 10px;
+            height: 470px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .phone-map-bg {
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(67, 97, 238, 0.06) 28px, rgba(67, 97, 238, 0.06) 29px),
+                repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(67, 97, 238, 0.06) 28px, rgba(67, 97, 238, 0.06) 29px);
+        }
+
+        .phone-route {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .phone-widget {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(67, 97, 238, 0.12);
+            padding: 10px 12px;
+            box-shadow: 0 2px 12px rgba(67, 97, 238, 0.08);
+        }
+
+        .phone-widget.top {
+            top: 10px;
+        }
+
+        .phone-widget.bottom {
+            bottom: 10px;
+        }
+
+        .widget-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .widget-value {
+            font-size: 14px;
+            font-weight: 800;
+            margin-top: 2px;
+            color: var(--text);
+        }
+
+        .widget-value.green {
+            color: var(--green);
+        }
+
+        .widget-value.red {
+            color: var(--red);
+        }
+
+        .widget-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .widget-badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 100px;
+            background: rgba(45, 198, 83, 0.12);
+            color: var(--green);
+            letter-spacing: 0.05em;
+        }
+
+        .widget-badge.red {
+            background: rgba(239, 35, 60, 0.10);
+            color: var(--red);
+        }
+
+        .float-chip {
+            position: absolute;
+            z-index: 3;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1.5px solid rgba(67, 97, 238, 0.14);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+            color: var(--text);
+        }
+
+        .float-chip.left {
+            left: -90px;
+            top: 30%;
+        }
+
+        .float-chip.right {
+            right: -90px;
+            top: 55%;
+        }
+
+        .chip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ═══════════════════════
+   CTA SECTION
+═══════════════════════ */
+        .section-cta {
+            padding: 100px 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, #2f4fd4 60%, #1a35b8 100%);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            color: #fff;
+        }
+
+        .cta-aura {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            pointer-events: none;
+        }
+
+        .cta-aura-1 {
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.07);
+            top: -150px;
+            left: -100px;
+        }
+
+        .cta-aura-2 {
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 180, 216, 0.12);
+            bottom: -100px;
+            right: -80px;
+        }
+
+        .cta-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .cta-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 24px;
+        }
+
+        .cta-title {
+            font-size: clamp(32px, 4.5vw, 60px);
+            font-weight: 900;
+            letter-spacing: -0.025em;
+            line-height: 1.08;
+            margin-bottom: 20px;
+        }
+
+        .cta-desc {
+            font-size: 17px;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.7;
+            margin-bottom: 40px;
+        }
+
+        .cta-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .btn-white {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: var(--font);
+            background: #fff;
+            color: var(--primary);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-white:hover {
+            background: #f0f4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+        }
+
+        .btn-outline-white {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: var(--font);
+            background: transparent;
+            color: #fff;
+            border: 1.5px solid rgba(255, 255, 255, 0.45);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-outline-white:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+        }
+
+        /* ═══════════════════════
+   FOOTER
+═══════════════════════ */
+        footer {
+            background: linear-gradient(180deg, #f0f7ff 0%, #e8effe 100%);
+            border-top: 1px solid rgba(67, 97, 238, 0.1);
+            padding: 64px 40px 32px;
+        }
+
+        .footer-grid {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .footer-logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .footer-tagline {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            max-width: 280px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .social-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1.5px solid rgba(67, 97, 238, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            box-shadow: 0 1px 4px rgba(67, 97, 238, 0.08);
+        }
+
+        .social-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .footer-col h4 {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .footer-col ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+        }
+
+        .footer-col li a {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-col li a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding-top: 28px;
+            border-top: 1px solid rgba(67, 97, 238, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ═══════════════════════
+   RESPONSIVE
+═══════════════════════ */
+        @media (max-width: 900px) {
+            header {
+                padding: 0 20px;
+            }
+
+            nav {
+                display: none;
+            }
+
+            .status-hud {
+                display: none;
+            }
+
+            .float-chip {
+                display: none;
+            }
+
+            .problems-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .problem-summary {
+                grid-template-columns: 1fr;
+                margin-top: -16px;
+            }
+
+            .benefit-row,
+            .benefit-row.reverse {
+                grid-template-columns: 1fr;
+                gap: 34px;
+            }
+
+            .benefit-row.reverse .benefit-copy,
+            .benefit-row.reverse .benefit-visual {
+                order: initial;
+            }
+
+            .demo-tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .dp-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .dash-kpi-grid,
+            .dash-bottom-grid,
+            .route-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .solution-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 32px;
+            }
+
+            .story-stats {
+                flex-direction: column;
+            }
+
+            .stat-item {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            }
+
+            .stat-item:last-child {
+                border-bottom: none;
+            }
+
+            .section-story,
+            .section-problem,
+            .section-benefits,
+            .section-demo,
+            .section-solution,
+            .section-cta {
+                padding: 70px 20px;
+            }
+
+            footer {
+                padding: 48px 20px 24px;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+
+            .hero-content {
+                padding-bottom: 220px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero-title {
+                font-size: 40px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .phone-frame {
+                width: 220px;
+            }
+
+            .phone-screen {
+                height: 400px;
+            }
+
+            .hero-waves {
+                height: 260px;
+            }
+
+            .hero-content {
+                padding-bottom: 160px;
+            }
+
+            .problem-img {
+                min-height: 132px;
+            }
+
+            .problem-signal {
+                width: 78px;
+            }
+
+            .problem-stat strong {
+                font-size: 22px;
+            }
+
+            .feature-phone {
+                width: min(100%, 250px);
+                min-height: 500px;
+            }
+
+            .feature-screen {
+                min-height: 472px;
+            }
+
+            .demo-panel {
+                padding: 14px;
+            }
+
+            .demo-tabs {
+                grid-template-columns: 1fr;
+            }
+
+            .real-map,
+            .map-fallback,
+            .route-demo,
+            .forecast-wrap,
+            .community-feed,
+            .dashboard-wrap,
+            .network-map {
+                height: 360px;
+                min-height: 360px;
+            }
+        }
+
+        /* ═══════════════════════ SCROLL SNAP ═══════════════════════ */
+        @media (min-width: 901px) {
+            html {
+                scroll-snap-type: y mandatory;
+            }
+
+            .section-story,
+            .section-problem,
+            .section-benefits,
+            .section-demo,
+            .section-gallery,
+            .section-solution,
+            .section-cta {
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+                scroll-margin-top: 64px;
+                /* Offset for fixed header */
+            }
+
+            #hero {
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+                scroll-margin-top: 0;
+                /* Snap hero to the absolute top */
+            }
+
+            footer {
+                scroll-snap-align: end;
+            }
+
+            /* Make sections take full height and center content vertically */
+            .section-story,
+            .section-problem,
+            .section-benefits,
+            .section-demo,
+            .section-gallery,
+            .section-solution,
+            .section-cta {
+                min-height: calc(100vh - 64px);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                box-sizing: border-box;
+            }
+
+            .story-inner,
+            .section-inner,
+            .cta-inner {
+                width: 100%;
+            }
+
+            .marquee-wrap {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══ HEADER ═══ -->
+    <header>
+        <div class="header-inner">
+            <a href="#" class="logo">
+                <div class="logo-icon">🌊</div>
+                Mekong Pathfinder
+                <div class="logo-pulse"></div>
+            </a>
+            <nav>
+                <a href="#">Trang chủ</a>
+                <a href="#solution">Thành tựu</a>
+                <a href="#team">Đội ngũ</a>
+                <a class="btn-nav" href="#download">Tải ứng dụng</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ═══ HERO ═══ -->
+    <section id="hero">
+        <canvas id="hero-canvas"></canvas>
+
+        <!-- Status HUD -->
+        <div class="status-hud">
+            <div class="hud-card" id="hud-city">
+                <div class="hud-dot green"></div>
+                <div>
+                    <div class="hud-text">Cần Thơ City</div>
+                    <div class="hud-sub">3D model loaded</div>
+                </div>
+            </div>
+            <div class="hud-card" id="hud-rain" style="opacity:0;">
+                <div class="hud-dot blue"></div>
+                <div>
+                    <div class="hud-text">Lượng mưa: 87mm/h</div>
+                    <div class="hud-sub">Cảnh báo mức 2</div>
+                </div>
+            </div>
+            <div class="hud-card" id="hud-flood" style="opacity:0;">
+                <div class="hud-dot red"></div>
+                <div>
+                    <div class="hud-text">5 điểm ngập phát hiện</div>
+                    <div class="hud-sub">Flood alert active</div>
+                </div>
+            </div>
+            <div class="hud-card" id="hud-ai" style="opacity:0;">
+                <div class="hud-dot green"></div>
+                <div>
+                    <div class="hud-text">AI route found</div>
+                    <div class="hud-sub">Độ tin cậy: 94%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text content -->
+        <div class="hero-content">
+            <div class="hero-badge">
+                <div class="badge-dot"></div>
+                Giải pháp đô thị bền vững · Cần Thơ
+            </div>
+            <h1 class="hero-title">
+                Mekong Pathfinder<br>
+                <span class="accent">bạn tìm đường,</span><br>
+                chúng tôi lo lũ
+            </h1>
+            <p class="hero-sub">
+                Phát hiện điểm ngập theo thời gian thực, cảnh báo sớm và tối ưu lộ trình bằng AI — giúp người dân Cần
+                Thơ và toàn vùng Mekong di chuyển an toàn mùa mưa.
+            </p>
+            <div class="hero-actions">
+                <a href="#download" class="btn-primary">⬇ Tải ứng dụng</a>
+                <a href="#solution" class="btn-ghost">Xem tính năng →</a>
+            </div>
+
+            <!-- Scene dots -->
+            <div class="scene-hud">
+                <div class="scene-title-display" id="scene-title-display">Thành phố Cần Thơ 3D</div>
+                <div class="scene-dots">
+                    <div class="scene-dot active" onclick="jumpToScene(0)"></div>
+                    <div class="scene-dot" onclick="jumpToScene(1)"></div>
+                    <div class="scene-dot" onclick="jumpToScene(2)"></div>
+                    <div class="scene-dot" onclick="jumpToScene(3)"></div>
+                    <div class="scene-dot" onclick="jumpToScene(4)"></div>
+                </div>
+                <div class="scroll-hint">Cuộn xuống để khám phá</div>
+            </div>
+        </div>
+        
+
+        <!-- ═══ SVG WAVES — 3 layers like screenshot ═══ -->
+        <div class="hero-waves">
+            <!-- Wave 3 — deepest / darkest blue, bottom -->
+            <!-- <div class="wave-layer" style="bottom:0;">
+                <svg viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+                    style="display:block;width:100%;height:200px;">
+                    <path fill="#2f4fd4">
+                        <animate attributeName="d" dur="9s" repeatCount="indefinite" values="
+              M0,120 C200,80 400,160 600,120 C800,80 1000,140 1200,100 C1320,80 1400,110 1440,100 L1440,200 L0,200Z;
+              M0,100 C200,140 400,80 600,120 C800,160 1000,90 1200,130 C1320,150 1400,110 1440,120 L1440,200 L0,200Z;
+              M0,120 C200,80 400,160 600,120 C800,80 1000,140 1200,100 C1320,80 1400,110 1440,100 L1440,200 L0,200Z
+            " />
+                    </path>
+                </svg>
+            </div> -->
+            <!-- Wave 2 — mid blue, slightly above -->
+            <div class="wave-layer" style="bottom:0px;">
+                <svg viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+                    style="display:block;width:100%;height:200px;">
+                    <path fill="#3a56d4" opacity="0.85">
+                        <animate attributeName="d" dur="7s" repeatCount="indefinite" values="
+              M0,80 C300,140 600,40 900,100 C1100,140 1280,70 1440,90 L1440,200 L0,200Z;
+              M0,110 C250,60 500,130 750,80 C1000,40 1250,110 1440,70 L1440,200 L0,200Z;
+              M0,80 C300,140 600,40 900,100 C1100,140 1280,70 1440,90 L1440,200 L0,200Z
+            " />
+                    </path>
+                </svg>
+            </div>
+            <!-- Wave 1 — primary blue, top / frontmost -->
+            <div class="wave-layer" style="bottom:0px;">
+                <svg viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+                    style="display:block;width:100%;height:200px;">
+                    <path fill="#4361ee" opacity="0.9">
+                        <animate attributeName="d" dur="5.5s" repeatCount="indefinite" values="
+              M0,50 C360,120 720,20 1080,80 C1260,110 1380,50 1440,60 L1440,200 L0,200Z;
+              M0,70 C280,20 560,90 840,50 C1080,20 1300,80 1440,40 L1440,200 L0,200Z;
+              M0,50 C360,120 720,20 1080,80 C1260,110 1380,50 1440,60 L1440,200 L0,200Z
+            " />
+                    </path>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ STORY (blue bg — continues from waves) ═══ -->
+    <div class="section-story">
+        <div class="story-inner">
+            <div class="story-eyebrow">Câu chuyện</div>
+            <div class="story-quote">
+                "Mỗi mùa mưa, hàng ngàn người dân Cần Thơ lại<br>
+                <em>lội nước tìm đường</em> — không biết đâu ngập, đâu an toàn."
+            </div>
+            <div class="story-body">
+                Cần Thơ — thành phố trung tâm Đồng bằng sông Cửu Long — đối mặt với ngập úng nghiêm trọng mỗi năm. Triều
+                cường, mưa lớn và nước biển dâng khiến hàng chục tuyến đường ngập sâu từ 0.3 đến 1.5 mét, gây thiệt hại
+                hàng tỷ đồng và ảnh hưởng trực tiếp đến cuộc sống hơn 1.2 triệu cư dân.
+            </div>
+            <div class="story-stats">
+                <div class="stat-item">
+                    <div class="stat-num">1.2M+</div>
+                    <div class="stat-label">Người dân được hỗ trợ</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">47</div>
+                    <div class="stat-label">Điểm ngập được theo dõi</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">13</div>
+                    <div class="stat-label">Tỉnh Đồng bằng Mekong</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">94%</div>
+                    <div class="stat-label">Độ chính xác dự báo AI</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ PROBLEM ═══ -->
+    <div class="section-problem" id="problem">
+        <div class="section-inner">
+            <div class="section-header">
+                <div class="eyebrow">Vấn đề</div>
+                <div class="section-title">Mỗi trận mưa lớn đều tạo ra<br><span>một khoảng trống dữ liệu</span></div>
+                <div class="section-desc">Ngập đô thị không chỉ là nước dâng. Vấn đề nằm ở việc thông tin đến chậm,
+                    rời rạc và khó biến thành quyết định kịp thời cho người dân lẫn đội điều phối.</div>
+            </div>
+            <div class="problem-summary">
+                <div class="problem-summary-item">
+                    <strong>01</strong>
+                    <span>Thiếu cảnh báo trước khi tuyến đường trở nên nguy hiểm.</span>
+                </div>
+                <div class="problem-summary-item">
+                    <strong>02</strong>
+                    <span>Dữ liệu hiện trường phân tán giữa nhiều nguồn khác nhau.</span>
+                </div>
+                <div class="problem-summary-item">
+                    <strong>03</strong>
+                    <span>Phản ứng đô thị phụ thuộc nhiều vào ghi nhận thủ công.</span>
+                </div>
+            </div>
+            <div class="problems-grid">
+                <div class="problem-card red">
+                    <div class="problem-img">
+                        <div class="problem-img-label">Ngập đột ngột</div>
+                        <div class="problem-signal"><span></span><span></span><span></span></div>
+                        <div class="problem-stat">
+                            <strong>Phút đầu</strong>
+                            <span>là thời điểm rủi ro nhất</span>
+                        </div>
+                    </div>
+                    <div class="problem-body">
+                        <h3>Không có cảnh báo đủ sớm</h3>
+                        <p>Người dân không biết trước điểm ngập, dẫn đến kẹt xe, hư xe, thậm chí tai nạn nguy hiểm khi
+                            nước dâng bất ngờ trong đêm.</p>
+                    </div>
+                </div>
+                <div class="problem-card yellow">
+                    <div class="problem-img">
+                        <div class="problem-img-label">Thông tin phân tán</div>
+                        <div class="problem-signal"><span></span><span></span><span></span></div>
+                        <div class="problem-stat">
+                            <strong>Rời rạc</strong>
+                            <span>khó nhìn toàn cảnh theo thời gian thực</span>
+                        </div>
+                    </div>
+                    <div class="problem-body">
+                        <h3>Thiếu bản đồ ngập thời gian thực</h3>
+                        <p>Dữ liệu ngập nằm rải rác ở nhiều sở ban ngành, không tập trung, không trực quan — người dân
+                            và tài xế không thể tra cứu nhanh.</p>
+                    </div>
+                </div>
+                <div class="problem-card teal">
+                    <div class="problem-img">
+                        <div class="problem-img-label">Lộ trình mù</div>
+                        <div class="problem-signal"><span></span><span></span><span></span></div>
+                        <div class="problem-stat">
+                            <strong>Đi vòng</strong>
+                            <span>hoặc đi thẳng vào vùng ngập sâu</span>
+                        </div>
+                    </div>
+                    <div class="problem-body">
+                        <h3>Ứng dụng bản đồ không biết ngập</h3>
+                        <p>Google Maps, Apple Maps không tích hợp dữ liệu ngập địa phương — thường dẫn tài xế đi thẳng
+                            vào các tuyến đường ngập sâu.</p>
+                    </div>
+                </div>
+                <div class="problem-card pink">
+                    <div class="problem-img">
+                        <div class="problem-img-label">Quản lý thủ công</div>
+                        <div class="problem-signal"><span></span><span></span><span></span></div>
+                        <div class="problem-stat">
+                            <strong>Chậm nhịp</strong>
+                            <span>khi cần ưu tiên điểm nóng ngay lập tức</span>
+                        </div>
+                    </div>
+                    <div class="problem-body">
+                        <h3>Chính quyền thiếu dữ liệu tổng hợp</h3>
+                        <p>Cán bộ đô thị phải ghi chép thủ công, không có dashboard tổng hợp để ra quyết định điều phối
+                            ứng phó lũ nhanh chóng.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BENEFITS -->
+    <div class="section-benefits" id="features">
+        <div class="section-inner">
+            <div class="section-header">
+                <div class="eyebrow">Tính năng chính</div>
+                <div class="section-title">Từ khoảng trống dữ liệu<br><span>đến quyết định kịp thời</span></div>
+                <div class="section-desc">Mekong Pathfinder gom dữ liệu ngập, cảnh báo và điều phối vào một luồng trải nghiệm rõ ràng cho người dân, tài xế và đội vận hành.</div>
+            </div>
+            <div class="benefits-stack">
+                <section class="benefit-row">
+                    <div class="benefit-copy">
+                        <h3>Cảnh báo ngập chủ động</h3>
+                        <p>Ứng dụng theo dõi mưa, triều và báo cáo hiện trường để gửi cảnh báo sớm trước khi tuyến đường trở nên nguy hiểm.</p>
+                        <div class="benefit-points">
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                                <div><h4>Cảnh báo theo vị trí</h4><p>Ưu tiên các điểm ngập gần nơi ở, trường học hoặc tuyến đường người dùng thường đi.</p></div>
+                            </div>
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
+                                <div><h4>Thông báo theo mức rủi ro</h4><p>Phân tầng nhẹ, vừa, nặng để người dân biết khi nào cần đổi lộ trình ngay.</p></div>
+                            </div>
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
+                                <div><h4>Cập nhật liên tục</h4><p>Dữ liệu mới được phản ánh vào trạng thái tuyến đường theo thời gian thực.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="benefit-visual">
+                        <div class="feature-phone"><div class="feature-screen">
+                            <div class="screen-top"><span>Cảnh báo</span><span class="screen-pill">Live</span></div>
+                            <div class="mini-map"><div class="mini-route"></div><div class="mini-flood"></div><div class="mini-pin one"></div><div class="mini-pin two"></div></div>
+                            <div class="screen-cards">
+                                <div class="screen-card"><strong>Nguyễn Văn Cừ</strong><span>Ngập 35cm, nên tránh trong 25 phút tới.</span></div>
+                                <div class="screen-card"><strong>Đường an toàn hơn</strong><span>Đề xuất đi qua 30/4, chậm hơn 4 phút.</span></div>
+                            </div>
+                        </div></div>
+                    </div>
+                </section>
+
+                <section class="benefit-row reverse">
+                    <div class="benefit-copy">
+                        <h3>Bản đồ ngập thời gian thực</h3>
+                        <p>Một bản đồ thống nhất giúp nhìn rõ điểm ngập, độ sâu ước tính và nguồn báo cáo thay vì theo dõi nhiều kênh rời rạc.</p>
+                        <div class="benefit-points">
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg></div>
+                                <div><h4>Lớp dữ liệu trực quan</h4><p>Hiển thị mưa, triều, cảm biến và báo cáo cộng đồng trên cùng một giao diện.</p></div>
+                            </div>
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
+                                <div><h4>Xác thực điểm nóng</h4><p>Gắn nguồn dữ liệu để đội vận hành biết điểm nào cần kiểm tra và ưu tiên xử lý.</p></div>
+                            </div>
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M19 9l-5 5-4-4-3 3"></path></svg></div>
+                                <div><h4>Theo dõi xu hướng</h4><p>Nhận diện khu vực ngập lặp lại để hỗ trợ quy hoạch và nâng cấp hạ tầng.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="benefit-visual">
+                        <div class="feature-phone"><div class="feature-screen">
+                            <div class="screen-top"><span>Bản đồ ngập</span><span class="screen-pill">3 lớp</span></div>
+                            <div class="mini-map">
+                                <div class="mini-flood" style="left:24px; right:auto; bottom:30px;"></div>
+                                <div class="mini-flood" style="width:72px; height:72px; right:28px; top:34px; bottom:auto;"></div>
+                                <div class="mini-route" style="border-color:var(--primary); transform:rotate(-8deg);"></div>
+                                <div class="mini-pin one" style="top:92px;"></div><div class="mini-pin two" style="right:48px; top:128px;"></div>
+                            </div>
+                            <div class="screen-cards">
+                                <div class="screen-card"><strong>12 điểm đang tăng</strong><span>Dữ liệu tổng hợp từ cảm biến và người dân.</span></div>
+                                <div class="screen-card"><strong>4 điểm cần kiểm tra</strong><span>Ưu tiên khu dân cư và nút giao chính.</span></div>
+                            </div>
+                        </div></div>
+                    </div>
+                </section>
+
+                <section class="benefit-row">
+                    <div class="benefit-copy">
+                        <h3>Điều phối phản ứng nhanh</h3>
+                        <p>Dashboard giúp chính quyền và đội phản ứng nhìn thấy điểm nóng, phân công xử lý và cập nhật trạng thái minh bạch hơn.</p>
+                        <div class="benefit-points">
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></div>
+                                <div><h4>Dashboard tập trung</h4><p>Tổng hợp mức ngập, số báo cáo và trạng thái xử lý theo từng phường, tuyến đường.</p></div>
+                            </div>
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div>
+                                <div><h4>Phân công rõ ràng</h4><p>Ghi nhận đội phụ trách, thời điểm tiếp nhận và kết quả xử lý để giảm thao tác thủ công.</p></div>
+                            </div>
+                            <div class="benefit-point">
+                                <div class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg></div>
+                                <div><h4>Phản hồi cộng đồng</h4><p>Người dân có thể gửi ảnh, xác nhận tình trạng và nhận lại cập nhật sau xử lý.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="benefit-visual">
+                        <div class="feature-phone"><div class="feature-screen">
+                            <div class="screen-top"><span>Điều phối</span><span class="screen-pill">Ops</span></div>
+                            <div class="mini-map">
+                                <div class="mini-route" style="border-color:var(--secondary);"></div>
+                                <div class="mini-flood" style="background:rgba(244,162,97,0.22); border-color:rgba(244,162,97,0.34);"></div>
+                                <div class="mini-pin one" style="background:var(--green); box-shadow:0 0 0 8px rgba(45,198,83,0.14);"></div><div class="mini-pin two"></div>
+                            </div>
+                            <div class="screen-cards">
+                                <div class="screen-card"><strong>Đội 2 đã nhận việc</strong><span>Cập nhật 3 phút trước tại Ninh Kiều.</span></div>
+                                <div class="screen-card"><strong>65% điểm nóng đã xử lý</strong><span>8 điểm còn theo dõi trong ca trực.</span></div>
+                            </div>
+                        </div></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEMO -->
+    <div class="section-demo" id="demo">
+        <div class="section-inner">
+            <div class="section-header">
+                <div class="eyebrow">Demo sản phẩm</div>
+                <div class="section-title">Xem Mekong Pathfinder<br><span>hoạt động trên dữ liệu thật</span></div>
+                <div class="section-desc">Các màn hình dưới đây mô phỏng luồng sử dụng chính. Riêng bản đồ dùng OpenStreetMap để hiển thị nền bản đồ thật tại Cần Thơ.</div>
+            </div>
+
+            <div class="demo-shell">
+                <div class="demo-tabs" role="tablist" aria-label="Demo panels">
+                    <button class="demo-tab active" type="button" data-demo-tab="0">Bản đồ ngập</button>
+                    <button class="demo-tab" type="button" data-demo-tab="1">AI lộ trình</button>
+                    <button class="demo-tab" type="button" data-demo-tab="2">Cảnh báo</button>
+                    <button class="demo-tab" type="button" data-demo-tab="3">Cộng đồng</button>
+                    <button class="demo-tab" type="button" data-demo-tab="4">Dashboard</button>
+                    <button class="demo-tab" type="button" data-demo-tab="5">Mekong network</button>
+                </div>
+
+                <div class="demo-body">
+                    <div class="demo-panel active" data-demo-panel="0">
+                        <div class="dp-layout">
+                            <div class="dp-info">
+                                <div class="dp-tag">Tính năng 01</div>
+                                <h3 class="dp-title">Bản đồ ngập<br>thời gian thực</h3>
+                                <p class="dp-desc">Hiển thị các điểm ngập trên bản đồ thật của Cần Thơ, cập nhật từ cảm biến IoT, dự báo triều và báo cáo cộng đồng.</p>
+                                <div class="dp-features">
+                                    <div class="dp-feat"><span class="dp-feat-dot" style="background:#ef233c;"></span>5 điểm đang ngập</div>
+                                    <div class="dp-feat"><span class="dp-feat-dot" style="background:#f4a261;"></span>3 khu vực cảnh báo</div>
+                                    <div class="dp-feat"><span class="dp-feat-dot" style="background:#2dc653;"></span>Tuyến an toàn đang mở</div>
+                                </div>
+                                <div class="dp-controls">
+                                    <button class="dp-btn active" type="button" data-map-layer="flood">Điểm ngập</button>
+                                    <button class="dp-btn active" type="button" data-map-layer="warn">Cảnh báo</button>
+                                    <button class="dp-btn active" type="button" data-map-layer="safe">An toàn</button>
+                                    <button class="dp-btn primary" type="button" id="demoMapRefresh">Làm mới</button>
+                                </div>
+                                <div class="dp-update" id="mapUpdateTime">Cập nhật: vừa xong</div>
+                            </div>
+                            <div class="dp-screen">
+                                <div class="dp-screen-bar">
+                                    <div class="dp-screen-dots"><span></span><span></span><span></span></div>
+                                    <span class="dp-screen-title">Bản đồ ngập - Cần Thơ</span>
+                                    <span class="dp-live-badge">LIVE</span>
+                                </div>
+                                <div class="real-map" id="demoRealMap"></div>
+                                <div class="map-fallback" id="demoMapFallback">Không tải được bản đồ. Kiểm tra kết nối mạng để xem OpenStreetMap.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-panel" data-demo-panel="1">
+                        <div class="dp-layout">
+                            <div class="dp-info">
+                                <div class="dp-tag">Tính năng 02</div>
+                                <h3 class="dp-title">AI tối ưu<br>lộ trình tránh ngập</h3>
+                                <p class="dp-desc">AI phân tích điểm ngập, mực nước và mật độ giao thông để đề xuất tuyến an toàn hơn cho từng chuyến đi.</p>
+                                <div class="dp-input-label">Từ</div>
+                                <select class="dp-select" id="routeFrom">
+                                    <option>Bến Ninh Kiều</option>
+                                    <option>Chợ Cái Răng</option>
+                                    <option>ĐH Cần Thơ</option>
+                                </select>
+                                <div class="dp-input-label">Đến</div>
+                                <select class="dp-select" id="routeTo">
+                                    <option>BV Đa Khoa Cần Thơ</option>
+                                    <option>Sân bay Cần Thơ</option>
+                                    <option>Khu CN Trà Nóc</option>
+                                </select>
+                                <div class="dp-controls">
+                                    <button class="dp-btn primary" type="button" id="routeRecalc">Tìm đường an toàn</button>
+                                </div>
+                                <div class="route-stats">
+                                    <div class="rs-item"><div class="rs-val green" id="rsDist">4.2 km</div><div class="rs-label">Khoảng cách</div></div>
+                                    <div class="rs-item"><div class="rs-val" id="rsTime">11 phút</div><div class="rs-label">Thời gian</div></div>
+                                    <div class="rs-item"><div class="rs-val red" id="rsAvoid">2 điểm</div><div class="rs-label">Ngập tránh</div></div>
+                                </div>
+                            </div>
+                            <div class="dp-screen">
+                                <div class="dp-screen-bar">
+                                    <div class="dp-screen-dots"><span></span><span></span><span></span></div>
+                                    <span class="dp-screen-title">AI Route Engine</span>
+                                    <span class="dp-live-badge" style="background:rgba(45,198,83,0.12);color:#1a7a3c;">94%</span>
+                                </div>
+                                <div class="route-demo">
+                                    <svg width="100%" height="100%" viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <pattern id="routeGrid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0L0 0 0 32" fill="none" stroke="rgba(67,97,238,0.10)" stroke-width="0.8"/></pattern>
+                                            <path id="safeRoute" d="M24,280 Q70,230 116,205 Q170,174 220,120 Q275,64 430,52"/>
+                                            <path id="blockedRoute" d="M24,280 Q80,240 118,222 Q174,196 226,218 Q270,238 286,176"/>
+                                        </defs>
+                                        <rect width="480" height="320" fill="url(#routeGrid)"/>
+                                        <rect x="190" y="0" width="58" height="320" fill="#4361ee" opacity="0.08"/>
+                                        <line x1="0" y1="110" x2="480" y2="110" stroke="rgba(67,97,238,0.22)" stroke-width="2"/>
+                                        <line x1="0" y1="220" x2="480" y2="220" stroke="rgba(67,97,238,0.22)" stroke-width="2"/>
+                                        <line x1="90" y1="0" x2="90" y2="320" stroke="rgba(67,97,238,0.22)" stroke-width="2"/>
+                                        <line x1="240" y1="0" x2="240" y2="320" stroke="rgba(67,97,238,0.22)" stroke-width="2"/>
+                                        <ellipse cx="105" cy="220" rx="34" ry="22" fill="#ef233c" opacity="0.14"/>
+                                        <ellipse cx="260" cy="118" rx="38" ry="20" fill="#ef233c" opacity="0.14"/>
+                                        <use href="#blockedRoute" fill="none" stroke="#ef233c" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.5"/>
+                                        <use href="#safeRoute" fill="none" stroke="#2dc653" stroke-width="12" opacity="0.12"/>
+                                        <use href="#safeRoute" fill="none" stroke="#2dc653" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 7">
+                                            <animate attributeName="stroke-dashoffset" from="0" to="-150" dur="2.4s" repeatCount="indefinite"/>
+                                        </use>
+                                        <circle cx="24" cy="280" r="10" fill="#4361ee"/>
+                                        <circle cx="430" cy="52" r="10" fill="#ef233c"/>
+                                        <circle r="8" fill="white" stroke="#2dc653" stroke-width="3">
+                                            <animateMotion dur="5s" repeatCount="indefinite"><mpath href="#safeRoute"/></animateMotion>
+                                        </circle>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-panel" data-demo-panel="2">
+                        <div class="dp-layout">
+                            <div class="dp-info">
+                                <div class="dp-tag">Tính năng 03</div>
+                                <h3 class="dp-title">Cảnh báo sớm<br>và push notification</h3>
+                                <p class="dp-desc">Nhận thông báo trước 30-60 phút khi khu vực có nguy cơ ngập, dựa trên dự báo mưa, triều và dữ liệu cảm biến.</p>
+                                <div class="dp-input-label">Lọc theo mức độ</div>
+                                <select class="dp-select" id="alertFilter">
+                                    <option value="all">Tất cả cảnh báo</option>
+                                    <option value="high">Mức cao</option>
+                                    <option value="medium">Trung bình</option>
+                                    <option value="low">Thấp</option>
+                                </select>
+                                <div class="alert-mini-list" id="alertMiniList" style="margin-top:14px;">
+                                    <div class="aml-item" data-level="high"><div class="aml-sev high"></div><div><div class="aml-title">Đ. Mậu Thân - 1.2m</div><div class="aml-sub">5 phút trước</div></div></div>
+                                    <div class="aml-item" data-level="high"><div class="aml-sev high"></div><div><div class="aml-title">Nguyễn Văn Cừ - 0.8m</div><div class="aml-sub">12 phút trước</div></div></div>
+                                    <div class="aml-item" data-level="medium"><div class="aml-sev medium"></div><div><div class="aml-title">Trần Văn Hoài - dự báo 45 phút</div><div class="aml-sub">18 phút trước</div></div></div>
+                                    <div class="aml-item" data-level="low"><div class="aml-sev low"></div><div><div class="aml-title">Lý Tự Trọng - nguy cơ thấp</div><div class="aml-sub">1 giờ trước</div></div></div>
+                                </div>
+                            </div>
+                            <div class="dp-screen">
+                                <div class="dp-screen-bar">
+                                    <div class="dp-screen-dots"><span></span><span></span><span></span></div>
+                                    <span class="dp-screen-title">Dự báo lượng mưa 6h</span>
+                                </div>
+                                <div class="forecast-wrap">
+                                    <div class="forecast-bars">
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:85%;background:#ef233c;"></div><div class="fcast-lbl">Now<br>87mm</div></div>
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:70%;opacity:.55;"></div><div class="fcast-lbl">+1h<br>62mm</div></div>
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:55%;opacity:.45;"></div><div class="fcast-lbl">+2h<br>48mm</div></div>
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:38%;opacity:.35;"></div><div class="fcast-lbl">+3h<br>34mm</div></div>
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:23%;opacity:.25;"></div><div class="fcast-lbl">+4h<br>21mm</div></div>
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:13%;opacity:.2;"></div><div class="fcast-lbl">+5h<br>12mm</div></div>
+                                        <div class="fcast-col"><div class="fcast-bar" style="height:7%;background:#2dc653;"></div><div class="fcast-lbl">+6h<br>6mm</div></div>
+                                    </div>
+                                    <div class="notif-list">
+                                        <div class="notif-card high"><strong>Khẩn cấp</strong> - Đ. Mậu Thân ngập 1.2m, không nên qua lại.</div>
+                                        <div class="notif-card medium"><strong>Cảnh báo</strong> - Trần Văn Hoài dự báo ngập trong 45 phút.</div>
+                                        <div class="notif-card low"><strong>Lưu ý</strong> - Triều đang rút, cải thiện sau khoảng 1 giờ.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-panel" data-demo-panel="3">
+                        <div class="dp-layout">
+                            <div class="dp-info">
+                                <div class="dp-tag">Tính năng 04</div>
+                                <h3 class="dp-title">Báo cáo<br>cộng đồng</h3>
+                                <p class="dp-desc">Người dân gửi mô tả, mức nước và vị trí. AI kiểm tra ngữ cảnh trước khi đưa báo cáo lên bản đồ vận hành.</p>
+                                <div class="dp-compose">
+                                    <textarea id="communityText" placeholder="Bạn thấy ngập ở đâu? Mô tả ngắn..." rows="4"></textarea>
+                                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                                        <select class="dp-select" id="communityDepth" style="flex:1;">
+                                            <option>Mực nước dưới 30cm</option>
+                                            <option>Mực nước 30-60cm</option>
+                                            <option>Mực nước 60cm-1m</option>
+                                            <option>Mực nước trên 1m</option>
+                                        </select>
+                                        <button class="dp-btn primary" type="button" id="communitySubmit">Gửi</button>
+                                    </div>
+                                </div>
+                                <div class="dp-update">AI xác thực báo cáo trong khoảng 2 giây trước khi hiển thị.</div>
+                            </div>
+                            <div class="dp-screen">
+                                <div class="dp-screen-bar">
+                                    <div class="dp-screen-dots"><span></span><span></span><span></span></div>
+                                    <span class="dp-screen-title">Feed cộng đồng</span>
+                                </div>
+                                <div class="community-feed" id="communityFeed">
+                                    <div class="cf-item"><div class="cf-avatar" style="background:#e8f0fe;color:#185FA5;">NV</div><div><div class="cf-header"><span class="cf-name">Nguyễn Văn An</span><span class="cf-loc">Đ. Mậu Thân</span></div><div class="cf-text">Ngập sâu khoảng 1.2m, xe máy không qua được. Cống tắc.</div><span class="cf-badge">AI xác thực - 1.2m</span></div></div>
+                                    <div class="cf-item"><div class="cf-avatar" style="background:#e1f5ee;color:#0F6E56;">TL</div><div><div class="cf-header"><span class="cf-name">Trần Thị Lan</span><span class="cf-loc">Cái Răng</span></div><div class="cf-text">Đường qua lại bình thường, nước rút rồi.</div><span class="cf-badge">AI xác thực - an toàn</span></div></div>
+                                    <div class="cf-item"><div class="cf-avatar" style="background:#faeeda;color:#854F0B;">PH</div><div><div class="cf-header"><span class="cf-name">Phạm Hoàng</span><span class="cf-loc">Đ. 3/2</span></div><div class="cf-text">Nước mới bắt đầu dâng, khoảng 30cm nhưng đang tăng nhanh.</div><span class="cf-badge checking">AI đang xác thực...</span></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-panel" data-demo-panel="4">
+                        <div class="dp-screen" style="min-height:0;">
+                            <div class="dp-screen-bar">
+                                <div class="dp-screen-dots"><span></span><span></span><span></span></div>
+                                <span class="dp-screen-title">Dashboard quản lý đô thị - Cần Thơ</span>
+                                <span class="dp-live-badge">LIVE</span>
+                            </div>
+                            <div class="dashboard-wrap">
+                                <div class="dash-kpi-grid">
+                                    <div class="kpi-card red"><div class="kpi-num">5</div><div class="kpi-label">Điểm đang ngập</div><div class="kpi-sub">+2 so với 1h trước</div></div>
+                                    <div class="kpi-card amber"><div class="kpi-num">8</div><div class="kpi-label">Cảnh báo hoạt động</div><div class="kpi-sub">3 mức cao</div></div>
+                                    <div class="kpi-card blue"><div class="kpi-num">47</div><div class="kpi-label">Báo cáo cộng đồng</div><div class="kpi-sub">hôm nay</div></div>
+                                    <div class="kpi-card green"><div class="kpi-num">3/5</div><div class="kpi-label">Đội ứng phó</div><div class="kpi-sub">đang triển khai</div></div>
+                                </div>
+                                <div class="dash-bottom-grid">
+                                    <div class="dash-mini-panel">
+                                        <div class="dmp-title">Điểm ngập theo mức độ</div>
+                                        <div class="dmp-row"><span>Đ. Mậu Thân</span><span class="dmp-val red">1.2m tăng</span></div>
+                                        <div class="dmp-row"><span>Nguyễn Văn Cừ</span><span class="dmp-val red">0.8m tăng</span></div>
+                                        <div class="dmp-row"><span>Đ. 30/4</span><span class="dmp-val">0.5m ổn định</span></div>
+                                        <div class="dmp-row"><span>Lý Tự Trọng</span><span class="dmp-val green">0.2m giảm</span></div>
+                                    </div>
+                                    <div class="dash-mini-panel">
+                                        <div class="dmp-title">Đội ứng phó</div>
+                                        <div class="crew-row"><div class="crew-av" style="background:#e1f5ee;color:#0F6E56;">P3</div><div style="flex:1;"><div class="crew-nm">Đội phường 3</div><div class="crew-tk">Đ. Mậu Thân</div></div><span class="crew-st active">Đang làm</span></div>
+                                        <div class="crew-row"><div class="crew-av" style="background:#e1f5ee;color:#0F6E56;">BT</div><div style="flex:1;"><div class="crew-nm">Đội Bình Thủy</div><div class="crew-tk">Nguyễn Văn Cừ</div></div><span class="crew-st active">Đang làm</span></div>
+                                        <div class="crew-row"><div class="crew-av" style="background:#faeeda;color:#854F0B;">CR</div><div style="flex:1;"><div class="crew-nm">Đội Cái Răng</div><div class="crew-tk">Đang di chuyển</div></div><span class="crew-st enroute">Trên đường</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-panel" data-demo-panel="5">
+                        <div class="dp-layout">
+                            <div class="dp-info">
+                                <div class="dp-tag">Tính năng 06</div>
+                                <h3 class="dp-title">Mạng lưới<br>Mekong 13 tỉnh</h3>
+                                <p class="dp-desc">Chia sẻ dữ liệu ngập liên tỉnh, phủ toàn Đồng bằng sông Cửu Long bằng cảm biến, báo cáo cộng đồng và đồng bộ định kỳ.</p>
+                                <div class="net-kpi-list">
+                                    <div class="nkpi"><div class="nkpi-val">13/13</div><div class="nkpi-label">Tỉnh kết nối</div></div>
+                                    <div class="nkpi"><div class="nkpi-val">247</div><div class="nkpi-label">Cảm biến IoT</div></div>
+                                    <div class="nkpi"><div class="nkpi-val">99.2%</div><div class="nkpi-label">Uptime</div></div>
+                                    <div class="nkpi"><div class="nkpi-val">5 phút</div><div class="nkpi-label">Tần suất sync</div></div>
+                                </div>
+                            </div>
+                            <div class="dp-screen">
+                                <div class="dp-screen-bar">
+                                    <div class="dp-screen-dots"><span></span><span></span><span></span></div>
+                                    <span class="dp-screen-title">Mạng lưới Mekong</span>
+                                </div>
+                                <div class="network-wrap">
+                                    <svg class="network-map" width="100%" viewBox="0 0 440 330" xmlns="http://www.w3.org/2000/svg">
+                                        <defs><pattern id="netGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0L0 0 0 28" fill="none" stroke="rgba(67,97,238,0.08)" stroke-width="0.7"/></pattern></defs>
+                                        <rect width="440" height="330" fill="url(#netGrid)"/>
+                                        <g stroke="#4361ee" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.34">
+                                            <line x1="220" y1="155" x2="110" y2="65"/><line x1="220" y1="155" x2="330" y2="55"/><line x1="220" y1="155" x2="130" y2="240"/><line x1="220" y1="155" x2="320" y2="248"/><line x1="220" y1="155" x2="55" y2="148"/><line x1="220" y1="155" x2="392" y2="148"/><line x1="220" y1="155" x2="260" y2="295"/><line x1="220" y1="155" x2="195" y2="42"/>
+                                        </g>
+                                        <circle cx="220" cy="155" r="22" fill="#4361ee"/><text x="220" y="159" text-anchor="middle" fill="white" font-size="9" font-family="Be Vietnam Pro,sans-serif" font-weight="700">Cần Thơ</text>
+                                        <circle cx="220" cy="155" r="22" fill="none" stroke="#4361ee" stroke-width="2" opacity="0.45"><animate attributeName="r" values="22;38;22" dur="2.2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.45;0;0.45" dur="2.2s" repeatCount="indefinite"/></circle>
+                                        <g fill="#2dc653" opacity=".9"><circle cx="110" cy="65" r="9"/><circle cx="330" cy="55" r="9"/><circle cx="130" cy="240" r="9"/><circle cx="320" cy="248" r="9"/><circle cx="195" cy="42" r="8"/><circle cx="260" cy="295" r="8"/></g>
+                                        <g fill="#f4a261" opacity=".9"><circle cx="55" cy="148" r="8"/><circle cx="392" cy="148" r="8"/></g>
+                                        <g fill="#ef233c" opacity=".82"><circle cx="122" cy="40" r="8"/><circle cx="350" cy="196" r="8"/></g>
+                                        <g fill="#4a5568" font-size="8" font-family="Be Vietnam Pro,sans-serif" text-anchor="middle"><text x="110" y="52">An Giang</text><text x="330" y="42">Đồng Tháp</text><text x="130" y="260">Kiên Giang</text><text x="320" y="268">Vĩnh Long</text><text x="55" y="135">Hà Tiên</text><text x="392" y="135">Bến Tre</text><text x="122" y="27">Tiền Giang</text><text x="350" y="214">Bạc Liêu</text></g>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ GALLERY ═══ -->
+    <div class="section-gallery">
+        <div class="gallery-aura aura-1"></div>
+        <div class="gallery-aura aura-2"></div>
+        <div class="gallery-header">
+            <div class="eyebrow">Hình ảnh thực tế</div>
+            <h2>Cần Thơ qua từng mùa mưa</h2>
+        </div>
+        <div class="marquee-wrap">
+            <div class="marquee-track">
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#e8f0fe,#dbeafe);">🌧️<div
+                            class="gallery-card-label">Đường Nguyễn Văn Cừ ngập</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">🚘<div
+                            class="gallery-card-label">Xe qua điểm ngập sâu</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);">🌊<div
+                            class="gallery-card-label">Triều cường sông Hậu</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">🏘️<div
+                            class="gallery-card-label">Khu dân cư Bình Thủy</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);">🛵<div
+                            class="gallery-card-label">Xe máy lội nước đêm</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">📱<div
+                            class="gallery-card-label">App cảnh báo realtime</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#e8f0fe,#dbeafe);">🌧️<div
+                            class="gallery-card-label">Đường Nguyễn Văn Cừ ngập</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">🚘<div
+                            class="gallery-card-label">Xe qua điểm ngập sâu</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);">🌊<div
+                            class="gallery-card-label">Triều cường sông Hậu</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">🏘️<div
+                            class="gallery-card-label">Khu dân cư Bình Thủy</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);">🛵<div
+                            class="gallery-card-label">Xe máy lội nước đêm</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">📱<div
+                            class="gallery-card-label">App cảnh báo realtime</div>
+                    </div>
+                </div>
+            </div>
+            <div class="marquee-track2" style="margin-top:16px;">
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#fdf4ff,#f3e8ff);">🌦️<div
+                            class="gallery-card-label">Dự báo thời tiết AI</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#e8f0fe,#dbeafe);">🗺️<div
+                            class="gallery-card-label">Bản đồ ngập 3D</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">🚦<div
+                            class="gallery-card-label">Điểm giao thông ngập</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);">📡<div
+                            class="gallery-card-label">Cảm biến IoT mực nước</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">🤖<div
+                            class="gallery-card-label">AI phân tích lộ trình</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">🏙️<div
+                            class="gallery-card-label">Cần Thơ nhìn từ trên cao</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#fdf4ff,#f3e8ff);">🌦️<div
+                            class="gallery-card-label">Dự báo thời tiết AI</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#e8f0fe,#dbeafe);">🗺️<div
+                            class="gallery-card-label">Bản đồ ngập 3D</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">🚦<div
+                            class="gallery-card-label">Điểm giao thông ngập</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);">📡<div
+                            class="gallery-card-label">Cảm biến IoT mực nước</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">🤖<div
+                            class="gallery-card-label">AI phân tích lộ trình</div>
+                    </div>
+                </div>
+                <div class="gallery-card">
+                    <div class="gallery-card-inner" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">🏙️<div
+                            class="gallery-card-label">Cần Thơ nhìn từ trên cao</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ SOLUTION ═══ -->
+    <div class="section-solution" id="solution">
+        <div class="section-inner">
+            <div class="section-header" style="max-width:560px;">
+                <div class="eyebrow">Giải pháp</div>
+                <div class="section-title">Mekong Pathfinder<br><span>giải quyết thế nào?</span></div>
+                <div class="section-desc">Ứng dụng tích hợp bản đồ ngập thời gian thực, AI dẫn đường và báo cáo cộng
+                    đồng trong một nền tảng duy nhất.</div>
+            </div>
+            <div class="solution-grid">
+                <div class="solution-features">
+                    <div class="solution-feat">
+                        <div class="feat-icon blue">🗺️</div>
+                        <div class="feat-body">
+                            <h4>Bản đồ ngập thời gian thực</h4>
+                            <p>Hiển thị toàn bộ điểm ngập trên bản đồ Cần Thơ, cập nhật mỗi 5 phút từ cảm biến IoT và
+                                báo cáo cộng đồng.</p>
+                        </div>
+                    </div>
+                    <div class="solution-feat">
+                        <div class="feat-icon cyan">🤖</div>
+                        <div class="feat-body">
+                            <h4>AI tối ưu lộ trình tránh ngập</h4>
+                            <p>Model AI phân tích dữ liệu ngập, đề xuất tuyến đường an toàn nhất — tích hợp sẵn vào bản
+                                đồ chỉ đường turn-by-turn.</p>
+                        </div>
+                    </div>
+                    <div class="solution-feat">
+                        <div class="feat-icon red">🔔</div>
+                        <div class="feat-body">
+                            <h4>Cảnh báo sớm & push notification</h4>
+                            <p>Nhận thông báo trước 30–60 phút khi khu vực của bạn có nguy cơ ngập, dựa trên dự báo thời
+                                tiết và mực triều.</p>
+                        </div>
+                    </div>
+                    <div class="solution-feat">
+                        <div class="feat-icon green">👥</div>
+                        <div class="feat-body">
+                            <h4>Báo cáo cộng đồng</h4>
+                            <p>Người dân chụp ảnh, gắn tag vị trí và báo cáo điểm ngập trong vài giây — dữ liệu được AI
+                                xác thực trước khi hiển thị.</p>
+                        </div>
+                    </div>
+                    <div class="solution-feat">
+                        <div class="feat-icon teal">📊</div>
+                        <div class="feat-body">
+                            <h4>Dashboard cho quản lý đô thị</h4>
+                            <p>Bảng điều khiển tổng hợp cho cán bộ phường/quận, theo dõi toàn bộ điểm ngập và ra quyết
+                                định điều phối ứng phó nhanh.</p>
+                        </div>
+                    </div>
+                    <div class="solution-feat">
+                        <div class="feat-icon pink">🌐</div>
+                        <div class="feat-body">
+                            <h4>Mạng lưới Mekong 13 tỉnh</h4>
+                            <p>Chia sẻ dữ liệu ngập liên tỉnh, phủ sóng toàn bộ Đồng bằng sông Cửu Long với mạng lưới
+                                cảm biến và dữ liệu cộng đồng.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Phone -->
+                <div class="solution-mockup">
+                    <div class="float-chip left">
+                        <div class="chip-dot" style="background:var(--green);box-shadow:0 0 5px var(--green);"></div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);">Đường an toàn</div>
+                            <div style="color:var(--green);font-weight:700;">Nguyễn Trãi →</div>
+                        </div>
+                    </div>
+                    <div class="phone-frame">
+                        <div class="phone-notch">
+                            <div class="phone-notch-bar"></div>
+                        </div>
+                        <div class="phone-screen">
+                            <div class="phone-map-bg"></div>
+                            <div class="phone-route">
+                                <svg viewBox="0 0 220 400" xmlns="http://www.w3.org/2000/svg"
+                                    style="width:100%;height:100%;">
+                                    <line x1="0" y1="100" x2="220" y2="100" stroke="#4361ee" stroke-width="0.5"
+                                        opacity="0.2" />
+                                    <line x1="0" y1="200" x2="220" y2="200" stroke="#4361ee" stroke-width="0.5"
+                                        opacity="0.2" />
+                                    <line x1="0" y1="300" x2="220" y2="300" stroke="#4361ee" stroke-width="0.5"
+                                        opacity="0.2" />
+                                    <line x1="55" y1="0" x2="55" y2="400" stroke="#4361ee" stroke-width="0.5"
+                                        opacity="0.2" />
+                                    <line x1="110" y1="0" x2="110" y2="400" stroke="#4361ee" stroke-width="0.5"
+                                        opacity="0.2" />
+                                    <line x1="165" y1="0" x2="165" y2="400" stroke="#4361ee" stroke-width="0.5"
+                                        opacity="0.2" />
+                                    <ellipse cx="80" cy="250" rx="26" ry="16" fill="rgba(67,97,238,0.15)"
+                                        stroke="#4361ee" stroke-width="0.8" />
+                                    <ellipse cx="155" cy="150" rx="20" ry="13" fill="rgba(67,97,238,0.12)"
+                                        stroke="#4361ee" stroke-width="0.8" />
+                                    <ellipse cx="50" cy="330" rx="18" ry="11" fill="rgba(67,97,238,0.10)"
+                                        stroke="#4361ee" stroke-width="0.8" />
+                                    <circle cx="80" cy="250" r="5" fill="#ef233c" opacity="0.9">
+                                        <animate attributeName="r" values="5;9;5" dur="1.5s" repeatCount="indefinite" />
+                                        <animate attributeName="opacity" values="0.9;0.2;0.9" dur="1.5s"
+                                            repeatCount="indefinite" />
+                                    </circle>
+                                    <circle cx="155" cy="150" r="4" fill="#ef233c">
+                                        <animate attributeName="r" values="4;8;4" dur="1.8s" repeatCount="indefinite" />
+                                    </circle>
+                                    <circle cx="50" cy="330" r="4" fill="#f4a261">
+                                        <animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite" />
+                                    </circle>
+                                    <path d="M20,380 Q30,300 55,260 Q80,220 110,190 Q140,160 165,120 Q190,80 200,30"
+                                        stroke="#2dc653" stroke-width="3" fill="none" stroke-linecap="round"
+                                        stroke-dasharray="8 4">
+                                        <animate attributeName="stroke-dashoffset" from="0" to="-120" dur="2s"
+                                            repeatCount="indefinite" />
+                                    </path>
+                                    <path d="M20,380 Q30,300 55,260 Q80,220 110,190 Q140,160 165,120 Q190,80 200,30"
+                                        stroke="#2dc653" stroke-width="9" fill="none" stroke-linecap="round"
+                                        opacity="0.12" />
+                                    <defs>
+                                        <path id="rp"
+                                            d="M20,380 Q30,300 55,260 Q80,220 110,190 Q140,160 165,120 Q190,80 200,30" />
+                                    </defs>
+                                    <circle r="7" fill="#fff" stroke="#2dc653" stroke-width="2">
+                                        <animateMotion dur="4s" repeatCount="indefinite">
+                                            <mpath href="#rp" />
+                                        </animateMotion>
+                                    </circle>
+                                </svg>
+                            </div>
+                            <div class="phone-widget top">
+                                <div class="widget-row">
+                                    <div>
+                                        <div class="widget-label">Lộ trình an toàn</div>
+                                        <div class="widget-value green">Nguyễn Trãi · 2.4km</div>
+                                    </div>
+                                    <div class="widget-badge">AI ✓</div>
+                                </div>
+                            </div>
+                            <div class="phone-widget bottom">
+                                <div class="widget-row">
+                                    <div>
+                                        <div class="widget-label">Cảnh báo khu vực</div>
+                                        <div class="widget-value red">2 điểm ngập gần đây</div>
+                                    </div>
+                                    <div class="widget-badge red">⚠ Alert</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="float-chip right">
+                        <div class="chip-dot" style="background:var(--red);animation:blink 1s infinite;"></div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);">Cảnh báo ngập</div>
+                            <div style="color:var(--red);font-weight:700;">Đ. Mậu Thân 0.6m</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ CTA ═══ -->
+    <div class="section-cta" id="download">
+        <div class="cta-aura cta-aura-1"></div>
+        <div class="cta-aura cta-aura-2"></div>
+        <div class="cta-inner">
+            <div class="cta-tag">Tải ngay · Miễn phí hoàn toàn</div>
+            <div class="cta-title">Sẵn sàng đi<br>an toàn hơn?</div>
+            <div class="cta-desc">Tải Mekong Pathfinder ngay hôm nay — bảo vệ bản thân, gia đình và chia sẻ thông tin
+                ngập cho cộng đồng. Miễn phí, hoạt động offline và không cần đăng ký.</div>
+            <div class="cta-actions">
+                <a href="#" class="btn-white">🍎 Tải trên App Store</a>
+                <a href="#" class="btn-outline-white">🤖 Tải trên Google Play</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <div class="footer-logo">
+                    <div class="footer-logo-icon">🌊</div>
+                    Mekong Pathfinder
+                </div>
+                <div class="footer-tagline">Giải pháp đô thị bền vững — giúp người dân Cần Thơ và toàn vùng Mekong di
+                    chuyển an toàn trong mùa mưa lũ bằng công nghệ AI.</div>
+                <div class="social-links">
+                    <a class="social-btn" href="#">𝑓</a>
+                    <a class="social-btn" href="#">▶</a>
+                    <a class="social-btn" href="#">⌥</a>
+                    <a class="social-btn" href="#">Z</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Sản phẩm</h4>
+                <ul>
+                    <li><a href="#">Bản đồ ngập</a></li>
+                    <li><a href="#">Dẫn đường AI</a></li>
+                    <li><a href="#">Cảnh báo sớm</a></li>
+                    <li><a href="#">Báo cáo cộng đồng</a></li>
+                    <li><a href="#">Dashboard đô thị</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Thông tin</h4>
+                <ul>
+                    <li><a href="#">Thành tựu</a></li>
+                    <li><a href="#">Đội ngũ</a></li>
+                    <li><a href="#">Câu chuyện</a></li>
+                    <li><a href="#">Báo chí</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ</h4>
+                <ul>
+                    <li><a href="#">Tải ứng dụng</a></li>
+                    <li><a href="#">Hướng dẫn sử dụng</a></li>
+                    <li><a href="#">Câu hỏi thường gặp</a></li>
+                    <li><a href="#">Liên hệ</a></li>
+                    <li><a href="#">Chính sách bảo mật</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2025 Mekong Pathfinder. Bảo lưu mọi quyền.</span>
+            <span>Được xây dựng cho <span style="color:var(--primary);font-weight:600;">Cần Thơ</span> · Powered by AI
+                🤖</span>
+        </div>
+    </footer>
+
+    <!-- ═══ THREE.JS ═══ -->
+    <script>
+        const s3 = document.createElement('script');
+        s3.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+        s3.onload = initScene;
+        document.head.appendChild(s3);
+
+        const SCENES = [
+            { title: 'Thành phố Cần Thơ 3D', huds: ['hud-city'] },
+            { title: 'Mưa bắt đầu', huds: ['hud-city', 'hud-rain'] },
+            { title: 'Flood Alert', huds: ['hud-city', 'hud-rain', 'hud-flood'] },
+            { title: 'AI Analysis', huds: ['hud-city', 'hud-rain', 'hud-flood', 'hud-ai'] },
+            { title: 'Vehicle Navigation', huds: ['hud-city', 'hud-rain', 'hud-flood', 'hud-ai'] },
+        ];
+        let currentScene = 0, autoTimer = null;
+        let renderer, scene, camera, clock;
+        let cityGroup, rainGeo, rainMat, routeLine, vehicleMesh;
+        let alertMarkers = [];
+        let routeProgress = 0;
+        let camT = { x: 0, y: 22, z: 18, lx: 0, ly: 0, lz: 0 };
+        let camC = { x: 0, y: 22, z: 18, lx: 0, ly: 0, lz: 0 };
+
+        function jumpToScene(i) { currentScene = i; updateSceneUI(); resetAutoPlay(); }
+        function nextScene() { if (currentScene < SCENES.length - 1) { currentScene++; updateSceneUI(); } }
+        function resetAutoPlay() {
+            if (autoTimer) clearInterval(autoTimer);
+            autoTimer = setInterval(() => { if (currentScene < SCENES.length - 1) nextScene(); else { clearInterval(autoTimer); autoTimer = null; } }, 4200);
+        }
+        function updateSceneUI() {
+            document.getElementById('scene-title-display').textContent = SCENES[currentScene].title;
+            document.querySelectorAll('.scene-dot').forEach((d, i) => { d.className = 'scene-dot' + (i === currentScene ? ' active' : ''); });
+            const all = ['hud-city', 'hud-rain', 'hud-flood', 'hud-ai'];
+            const active = SCENES[currentScene].huds;
+            all.forEach(id => { const el = document.getElementById(id); if (el) el.style.opacity = active.includes(id) ? '1' : '0'; });
+        }
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        function initScene() {
+            const canvas = document.getElementById('hero-canvas');
+            const W = canvas.clientWidth, H = canvas.clientHeight;
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(W, H);
+            renderer.setClearColor(0xffffff, 0); // transparent — white bg shows through
+
+            scene = new THREE.Scene();
+            clock = new THREE.Clock();
+            camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 200);
+            camera.position.set(0, 22, 18); camera.lookAt(0, 0, 0);
+
+            scene.add(new THREE.AmbientLight(0x4361ee, 1.2));
+            const d1 = new THREE.DirectionalLight(0x4361ee, 1.0); d1.position.set(10, 20, 10); scene.add(d1);
+            const d2 = new THREE.DirectionalLight(0x00b4d8, 0.5); d2.position.set(-10, 10, -10); scene.add(d2);
+
+            buildCity(); buildFlood(); buildRain(); buildRoute(); buildAlerts(); buildVehicle();
+            window.addEventListener('resize', onResize);
+            resetAutoPlay(); animate();
+        }
+
+        function buildCity() {
+            cityGroup = new THREE.Group(); scene.add(cityGroup);
+            cityGroup.add(new THREE.GridHelper(60, 32, 0x4361ee, 0xdbeafe));
+            const rand = (a, b) => a + Math.random() * (b - a);
+            for (let row = -5; row <= 5; row++) {
+                for (let col = -9; col <= 9; col++) {
+                    const bx = col * 2.3, bz = row * 2.9;
+                    if (bx > -3 && bx < 3) continue;
+                    const h = rand(0.3, row === 0 ? 4 : 2.2);
+                    const w = rand(0.55, 1.05), d = rand(0.55, 1.05);
+                    const jx = rand(-0.25, 0.25), jz = rand(-0.25, 0.25);
+                    // blue tint buildings
+                    const bright = 0.3 + Math.random() * 0.3;
+                    const c = new THREE.Color(bright * 0.5, bright * 0.7, 1.0);
+                    const mesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(w, h, d),
+                        new THREE.MeshPhongMaterial({ color: c, emissive: c, emissiveIntensity: 0.2, transparent: true, opacity: 0.7 })
+                    );
+                    mesh.position.set(bx + jx, h / 2, bz + jz); cityGroup.add(mesh);
+                }
+            }
+            // River
+            const river = new THREE.Mesh(new THREE.PlaneGeometry(6, 60),
+                new THREE.MeshPhongMaterial({ color: 0x4361ee, emissive: 0x2f4fd4, emissiveIntensity: 0.5, transparent: true, opacity: 0.6 }));
+            river.rotation.x = -Math.PI / 2; river.position.y = 0.02; cityGroup.add(river);
+            // Bridge
+            const bridge = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.12, 1.4),
+                new THREE.MeshPhongMaterial({ color: 0x3a56d4, transparent: true, opacity: 0.8 }));
+            bridge.position.set(0, 0.12, -2.5); cityGroup.add(bridge);
+        }
+
+        function buildFlood() {
+            [[-5, 0.38, 3], [4, 0.38, -1], [-3, 0.38, -4], [7, 0.38, 5], [-7, 0.38, 1]].forEach(([x, y, z]) => {
+                const p = new THREE.Mesh(new THREE.CircleGeometry(2, 20),
+                    new THREE.MeshPhongMaterial({ color: 0x4361ee, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+                p.rotation.x = -Math.PI / 2; p.position.set(x, y, z); p.userData.isFloodPatch = true; scene.add(p);
+            });
+        }
+        function buildRain() {
+            const count = 2000; rainGeo = new THREE.BufferGeometry();
+            const pos = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) { pos[i * 3] = (Math.random() - 0.5) * 65; pos[i * 3 + 1] = Math.random() * 32; pos[i * 3 + 2] = (Math.random() - 0.5) * 65; }
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            rainMat = new THREE.PointsMaterial({ color: 0x4361ee, size: 0.06, transparent: true, opacity: 0 });
+            scene.add(new THREE.Points(rainGeo, rainMat));
+        }
+        function buildAlerts() {
+            [[-5, 0.6, 3], [4, 0.6, -1], [-3, 0.6, -4], [7, 0.6, 5], [-7, 0.6, 1]].forEach(([x, y, z]) => {
+                const dot = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef233c, transparent: true, opacity: 0 }));
+                dot.position.set(x, y, z); scene.add(dot);
+                const ring = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.5, 16), new THREE.MeshBasicMaterial({ color: 0xef233c, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+                ring.rotation.x = -Math.PI / 2; ring.position.set(x, y + 0.01, z); scene.add(ring);
+                alertMarkers.push({ dot, ring });
+            });
+        }
+        function buildRoute() {
+            const pts = [new THREE.Vector3(-13, .55, 7), new THREE.Vector3(-9, .55, 5), new THREE.Vector3(-6, .55, 2),
+            new THREE.Vector3(-2, .55, .5), new THREE.Vector3(1.5, .55, -2.5), new THREE.Vector3(5, .55, -4),
+            new THREE.Vector3(8, .55, -2.5), new THREE.Vector3(12, .55, -.5)];
+            const curve = new THREE.CatmullRomCurve3(pts);
+            routeLine = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, .09, 6, false), new THREE.MeshBasicMaterial({ color: 0x2dc653, transparent: true, opacity: 0 }));
+            routeLine.userData.curve = curve; scene.add(routeLine);
+            const glow = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, .28, 6, false), new THREE.MeshBasicMaterial({ color: 0x2dc653, transparent: true, opacity: 0 }));
+            scene.add(glow); routeLine.userData.glow = glow;
+        }
+        function buildVehicle() {
+            const g = new THREE.Group();
+            g.add(new THREE.Mesh(new THREE.BoxGeometry(.72, .26, .4), new THREE.MeshPhongMaterial({ color: 0x4361ee, emissive: 0x2f4fd4, emissiveIntensity: 0.5 })));
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(.36, .22, .36), new THREE.MeshPhongMaterial({ color: 0x00b4d8, emissive: 0x006688, emissiveIntensity: 0.5 }));
+            cab.position.set(-.08, .22, 0); g.add(cab);
+            vehicleMesh = g; vehicleMesh.position.set(-13, .68, 7); vehicleMesh.visible = false; scene.add(vehicleMesh);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            const sc = currentScene;
+            if (sc >= 1) {
+                rainMat.opacity = lerp(rainMat.opacity, .6, .03);
+                const p = rainGeo.attributes.position.array;
+                for (let i = 0; i < p.length; i += 3) { p[i + 1] -= 0.2 + (i % 7) * .008; if (p[i + 1] < -2) p[i + 1] = 30; }
+                rainGeo.attributes.position.needsUpdate = true;
+            } else { rainMat.opacity = lerp(rainMat.opacity, 0, .05); }
+            scene.children.forEach(o => { if (o.userData && o.userData.isFloodPatch) o.material.opacity = lerp(o.material.opacity, sc >= 1 ? .45 : 0, .03); });
+            alertMarkers.forEach((m, i) => {
+                const at = sc >= 2 ? 1 : 0;
+                m.dot.material.opacity = lerp(m.dot.material.opacity, at, .07);
+                m.ring.material.opacity = lerp(m.ring.material.opacity, at * .4, .07);
+                if (sc >= 2) { const p2 = .5 + .5 * Math.sin(t * 3 + i * 1.3); m.dot.scale.setScalar(1 + p2 * .4); m.ring.scale.setScalar(1 + p2 * .6); }
+            });
+            const rt = sc >= 3 ? .95 : 0;
+            routeLine.material.opacity = lerp(routeLine.material.opacity, rt, .04);
+            if (routeLine.userData.glow) routeLine.userData.glow.material.opacity = lerp(routeLine.userData.glow.material.opacity, sc >= 3 ? (.1 + .04 * Math.sin(t * 2.5)) : 0, .04);
+            if (sc >= 4) {
+                vehicleMesh.visible = true; routeProgress += .0016; if (routeProgress > 1) routeProgress = 0;
+                const curve = routeLine.userData.curve;
+                if (curve) { const pt = curve.getPoint(routeProgress); vehicleMesh.position.lerp(pt, .1); vehicleMesh.position.y = .68; vehicleMesh.rotation.y = Math.atan2(curve.getTangent(routeProgress).x, curve.getTangent(routeProgress).z); }
+            } else { vehicleMesh.visible = false; routeProgress = 0; }
+            if (sc === 0) camT = { x: 0, y: 22, z: 18, lx: 0, ly: 0, lz: 0 };
+            else if (sc === 1) camT = { x: 2, y: 17, z: 15, lx: 0, ly: 0, lz: 0 };
+            else if (sc === 2) camT = { x: -1, y: 14, z: 13, lx: 0, ly: .5, lz: 0 };
+            else if (sc === 3) camT = { x: 0, y: 11, z: 11, lx: 0, ly: 0, lz: 0 };
+            else if (sc === 4 && vehicleMesh.visible) { const vp = vehicleMesh.position; camT = { x: vp.x - 5, y: 5.5, z: vp.z + 6, lx: vp.x, ly: vp.y, lz: vp.z }; }
+            const ls = .022;
+            camC.x = lerp(camC.x, camT.x, ls); camC.y = lerp(camC.y, camT.y, ls); camC.z = lerp(camC.z, camT.z, ls);
+            camC.lx = lerp(camC.lx, camT.lx, ls); camC.ly = lerp(camC.ly, camT.ly, ls); camC.lz = lerp(camC.lz, camT.lz, ls);
+            camera.position.set(camC.x, camC.y, camC.z); camera.lookAt(camC.lx, camC.ly, camC.lz);
+            if (sc === 0) cityGroup.rotation.y = Math.sin(t * .07) * .05;
+            renderer.render(scene, camera);
+        }
+        function onResize() {
+            const canvas = document.getElementById('hero-canvas');
+            const W = canvas.clientWidth, H = canvas.clientHeight;
+            camera.aspect = W / H; camera.updateProjectionMatrix(); renderer.setSize(W, H);
+        }
+    </script>
+</body>
+
+</html>
