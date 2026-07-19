@@ -23,6 +23,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className={beVietnamPro.variable} suppressHydrationWarning>
+      <head suppressHydrationWarning>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Tự động xóa các phần tử do Extension tự ý chèn để tránh lỗi Hydration
+          var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              mutation.addedNodes.forEach(function(node) {
+                if (node.id === 'MathJax_Message' || (node.className && typeof node.className === 'string' && node.className.indexOf('MathJax') !== -1)) {
+                  node.parentNode && node.parentNode.removeChild(node);
+                }
+              });
+            });
+          });
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+        ` }} suppressHydrationWarning />
+      </head>
       <body style={{ fontFamily: 'var(--font-be-vietnam), sans-serif' }} suppressHydrationWarning>
         {children}
       </body>

@@ -5825,6 +5825,8 @@ footer {
 .join-page {
   min-height: 100vh;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
 }
 
 .join-header {
@@ -5837,21 +5839,27 @@ footer {
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  padding: 12px 16px !important;
+  padding: 10px 16px !important;
   border-bottom: 1px solid var(--border) !important;
+  display: flex;
+  justify-content: center;
 }
 
 .join-container {
   max-width: 440px;
+  width: 100%;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 12px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .join-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  padding: 32px 24px;
+  padding: 24px 20px;
   text-align: center;
   box-shadow: var(--shadow);
   color: var(--text-dim);
@@ -6027,12 +6035,12 @@ footer {
 .join-routes {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .join-route-btn {
   width: 100%;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--bg-card);
@@ -6042,14 +6050,14 @@ footer {
   font-family: inherit;
 }
 
-.join-route-btn:hover:not(:disabled) {
+.join-route-btn:hover:not(.disabled) {
   border-color: var(--primary-glow);
   background: var(--primary-dim);
 }
 
 .join-route-btn.selected {
-  border: 2px solid var(--primary);
-  background: var(--primary-dim);
+  border: 2px solid var(--primary) !important;
+  background: var(--primary-dim) !important;
 }
 
 .join-route-btn.disabled {
@@ -6060,13 +6068,13 @@ footer {
 .join-route-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .join-route-letter {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6074,7 +6082,7 @@ footer {
   background: var(--bg2);
   color: var(--text);
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .join-route-letter.active {
@@ -6083,31 +6091,32 @@ footer {
 }
 
 .join-route-top strong {
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text);
+  font-weight: 700;
 }
 
 .join-route-tags {
   display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .risk-tag {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
 }
 
-.risk-tag.high { background: rgba(220, 38, 38, 0.1); color: var(--red); }
-.risk-tag.medium { background: rgba(217, 119, 6, 0.1); color: var(--yellow); }
-.risk-tag.none { background: rgba(22, 163, 74, 0.1); color: var(--green); }
+.risk-tag.high { background: rgba(239, 35, 60, 0.1); color: var(--red); }
+.risk-tag.medium { background: rgba(245, 158, 11, 0.1); color: var(--yellow); }
+.risk-tag.none { background: rgba(16, 185, 129, 0.1); color: var(--green); }
 
 .time-tag {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   background: var(--bg2);
   color: var(--text-muted);
@@ -6117,7 +6126,8 @@ footer {
   font-size: 12px;
   color: var(--text-muted);
   margin: 0;
-  padding-left: 38px;
+  padding-left: 32px;
+  line-height: 1.4;
 }
 
 /* Finished */
@@ -6157,4 +6167,28 @@ footer {
   .host-playing {
     grid-template-columns: 1fr;
   }
+}
+
+/* Leaflet Map Labels */
+.map-label-start, .map-label-end {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  font-family: inherit !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+.map-label-start {
+  border-left: 4px solid #22c55e !important;
+}
+.map-label-end {
+  border-left: 4px solid #ef4444 !important;
+}
+
+/* Car Player Marker */
+.car-player-marker {
+  background: transparent !important;
+  border: none !important;
 }

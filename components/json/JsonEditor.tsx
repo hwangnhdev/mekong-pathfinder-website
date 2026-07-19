@@ -65,12 +65,11 @@ export default function JsonEditor({ onRender, onClear }: JsonEditorProps) {
 
     try {
       const parsed = JSON.parse(jsonText);
-      if (!parsed.geometry || !Array.isArray(parsed.geometry)) {
-        setErrorMsg('Không tìm thấy trường "geometry" (hoặc không phải mảng).');
-        return;
-      }
-      if (parsed.geometry.length === 0) {
-        setErrorMsg('Trường geometry rỗng (No geometry found).');
+      const hasGeometry = parsed.geometry && Array.isArray(parsed.geometry) && parsed.geometry.length > 0;
+      const hasRoutes = Array.isArray(parsed.routes) && parsed.routes.length > 0 && parsed.routes[0].geometry && Array.isArray(parsed.routes[0].geometry) && parsed.routes[0].geometry.length > 0;
+
+      if (!hasGeometry && !hasRoutes) {
+        setErrorMsg('Không tìm thấy cấu trúc tuyến đường hợp lệ (Yêu cầu trường "geometry" hoặc mảng "routes" có tọa độ).');
         return;
       }
       onRender(parsed);

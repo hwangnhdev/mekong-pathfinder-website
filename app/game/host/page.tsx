@@ -5,7 +5,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {
   Trophy, Users, CheckCircle2, AlertTriangle,
-  Clock, Award
+  Clock, Award, Sparkles
 } from 'lucide-react';
 import logo04 from '../../../assets/images/logo_header/logo-04.png';
 import logo15 from '../../../assets/images/logo_header/logo-14.png';
@@ -13,7 +13,7 @@ import { ROUND_1_GRAPH } from '../gameData';
 
 const HostMap = dynamic(() => import('./HostMap'), { ssr: false });
 
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
   constructor(props: any) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -50,9 +50,14 @@ function HostProjectorPageInner() {
   const [roomCode, setRoomCode] = useState('');
   const [roomData, setRoomData] = useState<any>(null);
   const [joinLink, setJoinLink] = useState('');
-  const [countdown, setCountdown] = useState(8);
+  const [countdown, setCountdown] = useState(15);
   const [mounted, setMounted] = useState(false);
   const [fetchError, setFetchError] = useState('');
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionCountdown, setTransitionCountdown] = useState(5);
+  const isTransitioningRef = useRef(false);
+  const serverTimeOffsetRef = useRef<number>(0);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,7 +86,7 @@ function HostProjectorPageInner() {
       try {
         const res = await fetch('/api/game', {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true'
           },
@@ -90,9 +95,12 @@ function HostProjectorPageInner() {
         const data = await res.json();
         if (data.success) {
           const room = data.room;
+          if (data.serverTime) {
+            serverTimeOffsetRef.current = data.serverTime - Date.now();
+          }
           setRoomData(room);
           setFetchError('');
-          
+
           if (room.status === 'in_progress' && room.stepStartedAt) {
             startTimerFromServer(room.stepStartedAt);
           }
@@ -108,18 +116,93 @@ function HostProjectorPageInner() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [roomCode]);
 
+  const controlGame = async (action: string) => {
+    try {
+      const res = await fetch('/api/game', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ action, roomCode }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoomData(data.room);
+        if (action === 'next_step' || action === 'prev_step') {
+          isTransitioningRef.current = false;
+          setIsTransitioning(false);
+        }
+      }
+    } catch (err) {
+      console.error("Error controlling game:", err);
+    }
+  };
+
+  const advanceToNextStep = async () => {
+    try {
+      const res = await fetch('/api/game', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ action: 'next_step', roomCode }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoomData(data.room);
+        isTransitioningRef.current = false;
+        setIsTransitioning(false);
+      }
+    } catch (err) {
+      console.error("Error advancing step:", err);
+      isTransitioningRef.current = false;
+      setIsTransitioning(false);
+    }
+  };
+
+  const triggerTransitionPhase = () => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+    setIsTransitioning(true);
+    setTransitionCountdown(5);
+
+    let currentTransition = 5;
+    const tInterval = setInterval(() => {
+      currentTransition -= 1;
+      setTransitionCountdown(currentTransition);
+      if (currentTransition <= 0) {
+        clearInterval(tInterval);
+        advanceToNextStep();
+      }
+    }, 1000);
+  };
+
   const startTimerFromServer = (stepStartedAt?: number) => {
+    if (isTransitioningRef.current) return;
     if (timerRef.current) clearInterval(timerRef.current);
-    const elapsed = stepStartedAt ? Math.floor((Date.now() - stepStartedAt) / 1000) : 0;
-    const remaining = Math.max(8 - elapsed, 0);
+
+    if (roomData?.isDevMode) {
+      setCountdown(9999);
+      return;
+    }
+
+    const serverNow = Date.now() + serverTimeOffsetRef.current;
+    const elapsed = stepStartedAt ? Math.floor((serverNow - stepStartedAt) / 1000) : 0;
+    const remaining = Math.max(15 - elapsed, 0);
     setCountdown(remaining);
 
-    if (remaining <= 0) return;
+    if (remaining <= 0) {
+      triggerTransitionPhase();
+      return;
+    }
 
     timerRef.current = setInterval(() => {
       setCountdown(c => {
         if (c <= 1) {
           clearInterval(timerRef.current!);
+          triggerTransitionPhase();
           return 0;
         }
         return c - 1;
@@ -168,8 +251,8 @@ function HostProjectorPageInner() {
         position: 'absolute',
         top: '50%',
         left: '50%',
-        width: '1200px',
-        height: '1200px',
+        width: '120%',
+        height: '120%',
         opacity: 0.06,
         zIndex: 0,
         pointerEvents: 'none',
@@ -198,7 +281,7 @@ function HostProjectorPageInner() {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1.5fr',
+              gridTemplateColumns: '1fr 1.9fr',
               gap: '32px',
               alignItems: 'center',
               marginBottom: '24px',
@@ -209,7 +292,7 @@ function HostProjectorPageInner() {
                   Mekong Pathfinder
                 </span>
                 <h1 style={{ fontSize: '38px', fontWeight: '950', color: 'var(--text)', marginBottom: '6px', letterSpacing: '-0.03em', textTransform: 'uppercase', lineHeight: '1.1' }}>
-                  Flood Escape Race
+                  Flood<br /> Escape Race
                 </h1>
                 <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
                   Di chuyển từng bước để tránh ngập lụt.
@@ -270,12 +353,14 @@ function HostProjectorPageInner() {
               </div>
               <div className="admin-col-right">
                 <div className="admin-qr-section" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Quét mã để tham gia</h3>
+                  <div style={{ textAlign: 'center' }}>
+                    <h3 style={{ color: 'var(--text)', fontWeight: 'bold' }}>Quét mã để tham gia</h3>
+                    <div style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--text-muted)' }}>
+                      {joinLink}
+                    </div>
+                  </div>
                   <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
                     <img src={qrUrl} alt="QR Code" width={240} height={240} style={{ display: 'block' }} />
-                  </div>
-                  <div style={{ marginTop: '20px', fontFamily: 'monospace', fontSize: '14px', color: 'var(--text-muted)' }}>
-                    {joinLink}
                   </div>
                 </div>
               </div>
@@ -287,63 +372,125 @@ function HostProjectorPageInner() {
         {roomData?.status === 'in_progress' && (
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <div style={{ flex: 1, position: 'relative' }}>
-               <HostMap players={roomData.players} />
-               
-               {/* Overlay Timer */}
-               <div style={{
-                 position: 'absolute',
-                 top: '20px',
-                 left: '50%',
-                 transform: 'translateX(-50%)',
-                 background: 'rgba(15, 23, 42, 0.9)',
-                 padding: '15px 30px',
-                 borderRadius: '30px',
-                 display: 'flex',
-                 alignItems: 'center',
-                 gap: '15px',
-                 zIndex: 10,
-                 boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                 border: '1px solid rgba(255,255,255,0.1)'
-               }}>
-                 <Clock size={24} color={countdown <= 3 ? '#ef4444' : '#10b981'} />
-                 <span style={{ fontSize: '32px', fontWeight: '900', color: countdown <= 3 ? '#ef4444' : '#fff', fontVariantNumeric: 'tabular-nums' }}>
-                   {countdown}s
-                 </span>
-                 <span style={{ color: '#94a3b8', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                   {countdown > 0 ? 'Thời gian chọn ngã rẽ' : 'Chờ Host Next Step...'}
-                 </span>
-               </div>
+              <HostMap players={roomData.players} />
+
+              {/* Overlay Timer */}
+              <div style={{
+                position: 'absolute',
+                top: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: roomData.isDevMode ? 'rgba(15, 23, 42, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+                padding: roomData.isDevMode ? '8px 16px' : '15px 30px',
+                borderRadius: roomData.isDevMode ? '20px' : '30px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: roomData.isDevMode ? '8px' : '15px',
+                zIndex: 10,
+                boxShadow: roomData.isDevMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 10px 30px rgba(0,0,0,0.5)',
+                border: roomData.isDevMode ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: roomData.isDevMode ? 'blur(8px)' : 'none'
+              }}>
+                {roomData.isDevMode ? (
+                  <>
+                    <Sparkles size={14} color="#f59e0b" style={{ animation: 'pulse 2s infinite' }} />
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#f59e0b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      Dev Mode
+                    </span>
+                    <span style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.2)' }} />
+                    <span style={{ color: '#e2e8f0', fontSize: '11.5px', fontWeight: '500' }}>
+                      Không giới hạn thời gian chọn đường
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Clock size={24} color={isTransitioning ? '#3b82f6' : (countdown <= 3 ? '#ef4444' : '#10b981')} />
+                    <span style={{ fontSize: '32px', fontWeight: '900', color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                      {isTransitioning ? `${transitionCountdown}s` : `${countdown}s`}
+                    </span>
+                    <span style={{ color: '#94a3b8', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {isTransitioning ? 'Đang tổng hợp & xe đang di chuyển...' : 'Thời gian chọn ngã rẽ'}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            
+
             {/* Sidebar Leaderboard */}
             <div style={{ width: '350px', background: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
-               <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
-                 <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18}/> Bảng Xếp Hạng</h3>
-               </div>
-               <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-                 {sortedPlayers.map((p: any, i: number) => {
-                   const node = ROUND_1_GRAPH.nodes[p.currentNodeId];
-                   return (
-                     <div key={p.id} style={{
-                       display: 'flex',
-                       alignItems: 'center',
-                       padding: '12px',
-                       background: 'var(--bg-layer-1)',
-                       borderRadius: '8px',
-                       marginBottom: '8px',
-                       border: p.currentChoice ? '1px solid var(--primary)' : '1px solid transparent'
-                     }}>
-                       <div style={{ width: '30px', fontWeight: 'bold', color: i < 3 ? 'var(--primary)' : 'var(--text-muted)' }}>#{i+1}</div>
-                       <div style={{ flex: 1 }}>
-                         <div style={{ fontWeight: 'bold' }}>{p.name}</div>
-                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>📍 {node?.name}</div>
-                       </div>
-                       <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>{p.score}</div>
-                       {p.currentChoice && <CheckCircle2 size={16} color="var(--primary)" style={{marginLeft: '10px'}}/>}
-                     </div>
-                   );
-                 })}
-               </div>
+              <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><Trophy size={18} /> Bảng Xếp Hạng</h3>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+                {sortedPlayers.map((p: any, i: number) => {
+                  const node = ROUND_1_GRAPH.nodes[p.currentNodeId];
+                  return (
+                    <div key={p.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px',
+                      background: 'var(--bg-layer-1)',
+                      borderRadius: '8px',
+                      marginBottom: '8px',
+                      border: p.currentChoice ? '1px solid var(--primary)' : '1px solid transparent'
+                    }}>
+                      <div style={{ width: '30px', fontWeight: 'bold', color: i < 3 ? 'var(--primary)' : 'var(--text-muted)' }}>#{i + 1}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold' }}>{p.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>📍 {node?.name}</div>
+                      </div>
+                      <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>{p.score}</div>
+                      {p.currentChoice && <CheckCircle2 size={16} color="var(--primary)" style={{ marginLeft: '10px' }} />}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Host Controls on Projector (For dev / manual override) */}
+              <div style={{ padding: '15px', borderTop: '1px solid var(--border)', display: 'flex', gap: '10px', background: 'var(--bg-layer-1)' }}>
+                {roomData.currentStep > 1 && (
+                  <button
+                    onClick={() => controlGame('prev_step')}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: '#475569',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    Quay lại
+                  </button>
+                )}
+                <button
+                  onClick={() => controlGame('next_step')}
+                  style={{
+                    flex: 2,
+                    padding: '10px',
+                    background: roomData.currentStep < ROUND_1_GRAPH.totalSteps ? '#3b82f6' : '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  {roomData.currentStep < ROUND_1_GRAPH.totalSteps ? 'Đi tiếp ➔' : 'Xem kết quả 🏁'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -354,29 +501,46 @@ function HostProjectorPageInner() {
             <Award size={64} color="var(--primary)" style={{ marginBottom: '20px' }} />
             <h1 style={{ fontSize: '48px', marginBottom: '40px' }}>KẾT QUẢ CHUNG CUỘC</h1>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
-               {/* Podium */}
-               {sortedPlayers[1] && (
-                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{sortedPlayers[1].name}</div>
-                    <div style={{ background: '#c0c0c0', width: '120px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>2</div>
-                    <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[1].score} điểm</div>
-                 </div>
-               )}
-               {sortedPlayers[0] && (
-                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px', color: '#fbbf24' }}>{sortedPlayers[0].name}</div>
-                    <div style={{ background: '#fbbf24', width: '140px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>1</div>
-                    <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[0].score} điểm</div>
-                 </div>
-               )}
-               {sortedPlayers[2] && (
-                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{sortedPlayers[2].name}</div>
-                    <div style={{ background: '#cd7f32', width: '120px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>3</div>
-                    <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[2].score} điểm</div>
-                 </div>
-               )}
+              {/* Podium */}
+              {sortedPlayers[1] && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{sortedPlayers[1].name}</div>
+                  <div style={{ background: '#c0c0c0', width: '120px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>2</div>
+                  <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[1].score} điểm</div>
+                </div>
+              )}
+              {sortedPlayers[0] && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px', color: '#fbbf24' }}>{sortedPlayers[0].name}</div>
+                  <div style={{ background: '#fbbf24', width: '140px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>1</div>
+                  <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[0].score} điểm</div>
+                </div>
+              )}
+              {sortedPlayers[2] && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{sortedPlayers[2].name}</div>
+                  <div style={{ background: '#cd7f32', width: '120px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>3</div>
+                  <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[2].score} điểm</div>
+                </div>
+              )}
             </div>
+            
+            <button
+              onClick={() => controlGame('prev_step')}
+              style={{
+                marginTop: '40px',
+                padding: '12px 24px',
+                background: '#475569',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '15px'
+              }}
+            >
+              ⬅ Quay lại bước 3
+            </button>
           </div>
         )}
       </div>

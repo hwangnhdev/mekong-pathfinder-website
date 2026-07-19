@@ -25,7 +25,8 @@ export default function HostMap({ players }: HostMapProps) {
       attributionControl: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    // Use Voyager Light theme
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
     mapRef.current = map;
 
@@ -33,11 +34,36 @@ export default function HostMap({ players }: HostMapProps) {
     const start = ROUND_1_GRAPH.nodes[ROUND_1_GRAPH.startingNodeId];
     const end = ROUND_1_GRAPH.nodes[ROUND_1_GRAPH.destinationNodeId];
     if (start && end) {
-      const bounds = L.latLngBounds(
-        [start.lat, start.lng],
-        [end.lat, end.lng]
-      ).pad(0.2);
-      map.fitBounds(bounds);
+      setTimeout(() => {
+        map.invalidateSize();
+        const bounds = L.latLngBounds(
+          [start.lat, start.lng],
+          [end.lat, end.lng]
+        ).pad(0.15);
+        map.fitBounds(bounds);
+      }, 500);
+
+      // Start node custom marker
+      const startIcon = L.icon({
+        iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-green.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41]
+      });
+      L.marker([start.lat, start.lng], { icon: startIcon })
+        .addTo(map)
+        .bindTooltip(`<b>Điểm xuất phát:</b><br>${start.name}`, { permanent: true, direction: 'top', className: 'map-label-start' });
+
+      // End node custom marker
+      const endIcon = L.icon({
+        iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41]
+      });
+      L.marker([end.lat, end.lng], { icon: endIcon })
+        .addTo(map)
+        .bindTooltip(`<b>Điểm đích:</b><br>${end.name}`, { permanent: true, direction: 'top', className: 'map-label-end' });
     }
 
     // Draw all road edges once
@@ -47,7 +73,7 @@ export default function HostMap({ players }: HostMapProps) {
         {
           color: edge.color,
           weight: 4,
-          opacity: 0.3,
+          opacity: 0.4,
           dashArray: '5, 10'
         }
       ).addTo(map).bindPopup(edge.name);
@@ -55,10 +81,11 @@ export default function HostMap({ players }: HostMapProps) {
 
     // Draw all intersection nodes once
     Object.values(ROUND_1_GRAPH.nodes).forEach(node => {
+      if (node.id === ROUND_1_GRAPH.startingNodeId || node.id === ROUND_1_GRAPH.destinationNodeId) return;
       L.circleMarker([node.lat, node.lng], {
         radius: 6,
         color: '#ffffff',
-        fillColor: '#1e293b',
+        fillColor: '#64748b',
         fillOpacity: 1,
         weight: 2
       }).addTo(map).bindPopup(node.name);
@@ -77,48 +104,46 @@ export default function HostMap({ players }: HostMapProps) {
     const map = mapRef.current;
     if (!map) return;
 
-    // Gold marker icon for players
-    const playerIcon = new L.Icon({
-      iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-gold.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
-
-    // Group players by node
-    const playersByNode: Record<string, any[]> = {};
-    players.forEach(p => {
-      if (!playersByNode[p.currentNodeId]) {
-        playersByNode[p.currentNodeId] = [];
-      }
-      playersByNode[p.currentNodeId].push(p);
-    });
-
     // Clear old player markers
     Object.values(playerMarkersRef.current).forEach(marker => marker.remove());
     playerMarkersRef.current = {};
 
     // Render new markers
-    Object.entries(playersByNode).forEach(([nodeId, group]) => {
-      const node = ROUND_1_GRAPH.nodes[nodeId];
+    players.forEach((p: any) => {
+      const node = ROUND_1_GRAPH.nodes[p.currentNodeId];
       if (!node) return;
 
-      const popupContent = `
-        <div style="color: #000; font-family: sans-serif; font-size: 13px; line-height: 1.4;">
-          <strong style="display:block; margin-bottom:4px; font-weight:bold; color: #1e293b;">📍 ${node.name}</strong>
-          <ul style="margin: 0; padding-left: 14px; color: #4b5563;">
-            ${group.map(p => `<li><strong>${p.name}</strong> (${p.score}đ)</li>`).join('')}
-          </ul>
-        </div>
-      `;
+      // Add a tiny random offset based on player name/id so coordinates are stable but scattered
+      const seed = p.id.split('_')[1] || p.id;
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) {
+        hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const latOffset = ((hash & 0xFF) / 255 - 0.5) * 0.0003;
+      const lngOffset = (((hash >> 8) & 0xFF) / 255 - 0.5) * 0.0003;
 
-      const marker = L.marker([node.lat, node.lng], { icon: playerIcon })
+      const playerLat = node.lat + latOffset;
+      const playerLng = node.lng + lngOffset;
+
+      const carIcon = L.divIcon({
+        className: 'car-player-marker',
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div style="font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25)); transform: scaleX(-1); margin-bottom: 2px;">🚗</div>
+            <div style="background: rgba(15, 23, 42, 0.9); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+              ${p.name}
+            </div>
+          </div>
+        `,
+        iconSize: [60, 45],
+        iconAnchor: [30, 22]
+      });
+
+      const marker = L.marker([playerLat, playerLng], { icon: carIcon })
         .addTo(map)
-        .bindPopup(popupContent);
+        .bindPopup(`<strong>${p.name}</strong><br>Điểm số: ${p.score}đ`);
 
-      playerMarkersRef.current[nodeId] = marker;
+      playerMarkersRef.current[p.id] = marker;
     });
 
   }, [players]);
@@ -126,7 +151,7 @@ export default function HostMap({ players }: HostMapProps) {
   return (
     <div 
       ref={mapContainerRef} 
-      style={{ height: '100%', width: '100%', zIndex: 1, backgroundColor: '#0f172a' }} 
+      style={{ height: '100%', width: '100%', zIndex: 1, backgroundColor: '#f8fafc' }} 
     />
   );
 }

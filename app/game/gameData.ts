@@ -42,7 +42,7 @@ export const ROUND_1_GRAPH: RoundGraph = {
   destinationNodeId: 'end',
   totalSteps: 3,
   nodes: {
-    'start': { id: 'start', name: 'Đại học Cần Thơ', lat: 10.0298, lng: 105.7706 },
+    'start': { id: 'start', name: 'Đại học FPT Cần Thơ', lat: 10.0298, lng: 105.7706 },
     'm1_n': { id: 'm1_n', name: 'Ngã tư Mậu Thân', lat: 10.0350, lng: 105.7760 },
     'm1_c': { id: 'm1_c', name: 'Đường 30/4', lat: 10.0300, lng: 105.7765 },
     'm1_s': { id: 'm1_s', name: 'Trần Hưng Đạo', lat: 10.0250, lng: 105.7750 },
@@ -68,7 +68,7 @@ export const ROUND_1_GRAPH: RoundGraph = {
 
     // STEP 2 (Mid1 -> Mid2)
     {
-      id: 'e_m1n_m2n', from: 'm1_n', to: 'm2_n', letter: 'A', name: 'Hùng Vương (Bắc)', color: '#3b82f6', risk: 'none', time: 9, desc: 'Đường 1 chiều, vắng xe.',
+      id: 'e_m1n_m2n', from: 'm1_n', to: 'm2_n', letter: 'A', name: 'Hùng Vương (Bắc)', color: '#10b981', risk: 'none', time: 9, desc: 'Đường 1 chiều, vắng xe.',
       geometry: [{ lat: 10.0350, lng: 105.7760 }, { lat: 10.0355, lng: 105.7785 }, { lat: 10.0360, lng: 105.7810 }]
     },
     {
@@ -84,7 +84,7 @@ export const ROUND_1_GRAPH: RoundGraph = {
       geometry: [{ lat: 10.0300, lng: 105.7765 }, { lat: 10.0305, lng: 105.7790 }, { lat: 10.0310, lng: 105.7820 }]
     },
     {
-      id: 'e_m1c_m2s', from: 'm1_c', to: 'm2_s', letter: 'C', name: 'Ngô Quyền', color: '#3b82f6', risk: 'none', time: 11, desc: 'Đi vòng nhưng đường tốt.',
+      id: 'e_m1c_m2s', from: 'm1_c', to: 'm2_s', letter: 'C', name: 'Ngô Quyền', color: '#10b981', risk: 'none', time: 11, desc: 'Đi vòng nhưng đường tốt.',
       geometry: [{ lat: 10.0300, lng: 105.7765 }, { lat: 10.0280, lng: 105.7780 }, { lat: 10.0260, lng: 105.7800 }]
     },
     {
@@ -98,7 +98,7 @@ export const ROUND_1_GRAPH: RoundGraph = {
 
     // STEP 3 (Mid2 -> End)
     {
-      id: 'e_m2n_e', from: 'm2_n', to: 'end', letter: 'A', name: 'Nguyễn Thái Học', color: '#3b82f6', risk: 'none', time: 7, desc: 'Khá gần và an toàn.',
+      id: 'e_m2n_e', from: 'm2_n', to: 'end', letter: 'A', name: 'Nguyễn Thái Học', color: '#10b981', risk: 'none', time: 7, desc: 'Khá gần và an toàn.',
       geometry: [{ lat: 10.0360, lng: 105.7810 }, { lat: 10.0347, lng: 105.7837 }, { lat: 10.0335, lng: 105.7865 }]
     },
     {

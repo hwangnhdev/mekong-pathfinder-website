@@ -100,18 +100,18 @@ export async function POST(req: Request) {
           timeTaken: 0,
         });
       }
-      return NextResponse.json({ success: true, room });
+      return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
     if (action === 'status') {
       const { roomCode } = body;
       const room = rooms.get(roomCode?.toUpperCase());
       if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
-      return NextResponse.json({ success: true, room });
+      return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
     if (action === 'start') {
-      const { roomCode } = body;
+      const { roomCode, isDevMode } = body;
       const room = rooms.get(roomCode?.toUpperCase());
       if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
 
@@ -119,6 +119,7 @@ export async function POST(req: Request) {
       room.currentRound = 1;
       room.currentStep = 1;
       room.stepStartedAt = Date.now();
+      (room as any).isDevMode = !!isDevMode;
       
       const startNode = ROUND_1_GRAPH.startingNodeId;
       room.players.forEach(p => {
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
         p.currentChoice = null;
         p.timeTaken = 0;
       });
-      return NextResponse.json({ success: true, room });
+      return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
     if (action === 'select') {
@@ -138,12 +139,16 @@ export async function POST(req: Request) {
       
       const player = room.players.find(p => p.id === playerId);
       if (!player) return NextResponse.json({ success: false, error: 'Người chơi không có trong phòng!' });
-      if (player.currentChoice !== null) return NextResponse.json({ success: false, error: 'Bạn đã chọn rồi!' });
+      
+      // If isDevMode is active, allow changing selection by bypassing the "already selected" check!
+      if (!(room as any).isDevMode && player.currentChoice !== null) {
+        return NextResponse.json({ success: false, error: 'Bạn đã chọn rồi!' });
+      }
 
       player.currentChoice = edgeId;
       player.timeTaken = timeTaken;
 
-      return NextResponse.json({ success: true, room });
+      return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
     if (action === 'next_step') {
@@ -188,6 +193,36 @@ export async function POST(req: Request) {
       }
 
       return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'prev_step') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+
+      if (room.currentStep > 1) {
+        room.currentStep -= 1;
+        room.stepStartedAt = Date.now();
+        room.status = 'in_progress';
+
+        room.players.forEach(p => {
+          if (p.pathHistory.length > 0) {
+            const lastEdgeId = p.pathHistory.pop();
+            const lastEdge = ROUND_1_GRAPH.edges.find(e => e.id === lastEdgeId);
+            if (lastEdge) {
+              p.currentNodeId = lastEdge.from;
+              let points = 50;
+              if (lastEdge.risk === 'none') points += 50;
+              if (lastEdge.risk === 'medium') points += 20;
+              if (lastEdge.risk === 'high') points -= 30;
+              p.score = Math.max(0, p.score - points);
+            }
+          }
+          p.currentChoice = null;
+          p.timeTaken = 0;
+        });
+      }
+      return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
     if (action === 'end') {

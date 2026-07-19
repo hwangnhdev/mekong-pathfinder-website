@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { RouteDetail } from '../../utils/routeUtils';
 
 interface Waypoint {
   lat: number;
@@ -8,22 +9,41 @@ interface Waypoint {
 }
 
 interface RouteMapInnerProps {
-  geometry: Waypoint[];
-  snappedWaypoints: Waypoint[];
-  showRoute: boolean;
+  mode: 'primary' | 'alternatives' | 'compare';
+  activeAltIndex: number;
+  primaryRoute: RouteDetail | null;
+  alternativeRoutes: RouteDetail[];
+  legendVisibility: Record<string, boolean>;
   showMarkers: boolean;
-  lineWidth: number;
-  lineColor: string;
   theme: 'light' | 'dark';
   onMapClick?: (lat: number, lng: number) => void;
+  showCoordinates: boolean;
+  animateRoute: boolean;
+  animationSpeed: number; // 0.5, 1, 2, 5
+  floodData?: any;
+  showFlood?: boolean;
 }
 
-// Custom Leaflet DivIcon helpers to avoid broken PNG asset links in Next.js
+// Utility to format duration (ms to MM:SS or HH:MM:SS)
+const formatDuration = (totalMs: number) => {
+  const totalSeconds = totalMs / 1000;
+  if (isNaN(totalSeconds) || totalSeconds <= 0) return '00:00';
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  
+  if (hrs > 0) {
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+// DivIcon creation helper for start/end markers
 const createDivIcon = (color: string, label: string) => {
   return L.divIcon({
     html: `
       <div class="relative flex items-center justify-center" style="width: 32px; height: 32px;">
-        <span class="absolute inline-flex h-full w-full rounded-full opacity-30 animate-ping" style="background-color: ${color};"></span>
+        <span class="absolute inline-flex h-full w-full rounded-full opacity-35 animate-ping" style="background-color: ${color};"></span>
         <div class="relative flex items-center justify-center rounded-full border-2 border-white shadow-md text-[10px] font-bold text-white font-mono" 
              style="background-color: ${color}; width: 22px; height: 22px;">
           ${label}
@@ -38,27 +58,38 @@ const createDivIcon = (color: string, label: string) => {
 };
 
 export default function RouteMapInner({
-  geometry,
-  snappedWaypoints,
-  showRoute,
+  mode,
+  activeAltIndex,
+  primaryRoute,
+  alternativeRoutes,
+  legendVisibility,
   showMarkers,
-  lineWidth,
-  lineColor,
   theme,
-  onMapClick
+  onMapClick,
+  showCoordinates,
+  animateRoute,
+  animationSpeed,
+  floodData,
+  showFlood = true
 }: RouteMapInnerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const polylineRef = useRef<L.Polyline | null>(null);
-  const startMarkerRef = useRef<L.Marker | null>(null);
-  const endMarkerRef = useRef<L.Marker | null>(null);
+  
+  // Layer groups to easily manage show/hide of multiple route layers
+  const routeLayersRef = useRef<L.LayerGroup | null>(null);
+  const markerLayersRef = useRef<L.LayerGroup | null>(null);
+  const floodLayersRef = useRef<L.LayerGroup | null>(null);
+  
+  // Keep track of animations to clear them properly
+  const animationIntervalsRef = useRef<NodeJS.Timeout[]>([]);
 
-  // Initialize Map
+  const colors = useMemo(() => ['#f97316', '#22c55e', '#a855f7', '#ec4899', '#06b6d4'], []);
+
+  // 1. Initialize Map once
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Center at Can Tho City initially
     const map = L.map(mapContainerRef.current, {
       center: [10.037, 105.784],
       zoom: 13,
@@ -68,11 +99,14 @@ export default function RouteMapInner({
 
     mapRef.current = map;
 
-    // Map click handler to trigger coordinate extraction
+    // Create Layer Groups
+    routeLayersRef.current = L.layerGroup().addTo(map);
+    markerLayersRef.current = L.layerGroup().addTo(map);
+    floodLayersRef.current = L.layerGroup().addTo(map);
+
+    // Map click handler
     map.on('click', (e: L.LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
-
-      // Open a Leaflet popup showing coordinate
       L.popup()
         .setLatLng(e.latlng)
         .setContent(`
@@ -97,7 +131,7 @@ export default function RouteMapInner({
     };
   }, []);
 
-  // Update Map Theme Tile Layer
+  // 2. Update Map Tile Layer based on theme
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -106,7 +140,6 @@ export default function RouteMapInner({
       map.removeLayer(tileLayerRef.current);
     }
 
-    // CartoDB Monochrome Map Styles (Light / Dark)
     const url = theme === 'dark'
       ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -119,100 +152,298 @@ export default function RouteMapInner({
     tileLayerRef.current = layer;
   }, [theme]);
 
-  // Update Route Polyline & Markers with dynamic drawing animation
+  // Helper to clear existing drawing animations
+  const clearAnimations = () => {
+    animationIntervalsRef.current.forEach(interval => clearInterval(interval));
+    animationIntervalsRef.current = [];
+  };
+
+  // Clean up animations on unmount
+  useEffect(() => {
+    return () => clearAnimations();
+  }, []);
+
+  // 3. Render Routes and markers dynamically
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const rGroup = routeLayersRef.current;
+    const mGroup = markerLayersRef.current;
+    if (!map || !rGroup || !mGroup) return;
 
-    // Clean up old polyline & markers
-    if (polylineRef.current) {
-      map.removeLayer(polylineRef.current);
-      polylineRef.current = null;
-    }
-    if (startMarkerRef.current) {
-      map.removeLayer(startMarkerRef.current);
-      startMarkerRef.current = null;
-    }
-    if (endMarkerRef.current) {
-      map.removeLayer(endMarkerRef.current);
-      endMarkerRef.current = null;
-    }
+    // Clear old layers and animations
+    rGroup.clearLayers();
+    mGroup.clearLayers();
+    clearAnimations();
 
-    if (geometry.length === 0) return;
+    const visibleGeometriesForFitting: L.LatLng[] = [];
 
-    // Fit bounds immediately based on full geometry so map is positioned correctly
-    const latLngs = geometry.map((pt) => [pt.lat, pt.lng] as [number, number]);
-    const fullPolyline = L.polyline(latLngs);
-    try {
-      map.fitBounds(fullPolyline.getBounds(), {
-        padding: [40, 40],
-        maxZoom: 16
-      });
-    } catch (e) {
-      console.error('Lỗi khi thu phóng bản đồ:', e);
-    }
+    // Filter routes to render based on active mode
+    const routesToRender: { route: RouteDetail; color: string; isPrimary: boolean; legendKey: string }[] = [];
 
-    // Add Start Marker immediately if enabled
-    const startPt = snappedWaypoints[0] || geometry[0];
-    const endPt = snappedWaypoints[snappedWaypoints.length - 1] || geometry[geometry.length - 1];
-
-    if (showMarkers && startPt) {
-      const startMarker = L.marker([startPt.lat, startPt.lng], {
-        icon: createDivIcon('#10b981', 'S') // Green for Start
-      }).bindPopup(`<div class="text-xs font-semibold text-neutral-800 font-mono">Điểm Bắt Đầu (Start)<br/>${startPt.lat.toFixed(6)}, ${startPt.lng.toFixed(6)}</div>`);
-      startMarker.addTo(map);
-      startMarkerRef.current = startMarker;
-    }
-
-    if (!showRoute) return;
-
-    // SPEED CONFIGURATION: Total duration of the animation in milliseconds.
-    // TĂNG giá trị này để vẽ CHẬM hơn, GIẢM giá trị này để vẽ NHANH hơn.
-    const TOTAL_ANIMATION_MS = 1500;
-    const intervalMs = Math.max(8, Math.floor(TOTAL_ANIMATION_MS / geometry.length));
-
-    // Initialize the line with just the starting point
-    const animatedPolyline = L.polyline([[geometry[0].lat, geometry[0].lng]], {
-      color: lineColor,
-      weight: lineWidth,
-      opacity: 0.9,
-      lineJoin: 'round',
-      lineCap: 'round'
-    });
-    animatedPolyline.addTo(map);
-    polylineRef.current = animatedPolyline;
-
-    let index = 1;
-    const intervalId = setInterval(() => {
-      if (index >= geometry.length) {
-        clearInterval(intervalId);
-
-        // Add End Marker when route drawing animation finishes
-        if (showMarkers && endPt && endPt !== startPt) {
-          const endMarker = L.marker([endPt.lat, endPt.lng], {
-            icon: createDivIcon('#ef4444', 'E') // Red for End
-          }).bindPopup(`<div class="text-xs font-semibold text-neutral-800 font-mono">Điểm Kết Thúc (End)<br/>${endPt.lat.toFixed(6)}, ${endPt.lng.toFixed(6)}</div>`);
-          endMarker.addTo(map);
-          endMarkerRef.current = endMarker;
+    if (mode === 'primary' && primaryRoute) {
+      if (legendVisibility.primary !== false) {
+        routesToRender.push({ route: primaryRoute, color: '#3b82f6', isPrimary: true, legendKey: 'primary' });
+      }
+    } else if (mode === 'alternatives') {
+      alternativeRoutes.forEach((alt, idx) => {
+        const legendKey = `alt${idx}`;
+        if (legendVisibility[legendKey] !== false) {
+          const color = colors[idx % colors.length];
+          routesToRender.push({ route: alt, color, isPrimary: false, legendKey });
         }
-        return;
+      });
+    } else if (mode === 'compare') {
+      if (primaryRoute && legendVisibility.primary !== false) {
+        routesToRender.push({ route: primaryRoute, color: '#3b82f6', isPrimary: true, legendKey: 'primary' });
+      }
+      alternativeRoutes.forEach((alt, idx) => {
+        const legendKey = `alt${idx}`;
+        if (legendVisibility[legendKey] !== false) {
+          const color = colors[idx % colors.length];
+          routesToRender.push({ route: alt, color, isPrimary: false, legendKey });
+        }
+      });
+    }
+
+    if (routesToRender.length === 0) return;
+
+    // Helper to draw markers for a route
+    const drawMarkersForRoute = (route: RouteDetail, startColor: string, endColor: string) => {
+      if (!showMarkers || route.geometry.length === 0) return;
+      const start = route.geometry[0];
+      const end = route.geometry[route.geometry.length - 1];
+
+      // Start Marker
+      const startMarker = L.marker([start.lat, start.lng], {
+        icon: createDivIcon(startColor, 'S')
+      }).bindPopup(`<div class="text-xs font-semibold text-neutral-800 font-mono">Điểm đầu (${route.name})<br/>${start.lat.toFixed(6)}, ${start.lng.toFixed(6)}</div>`);
+      startMarker.addTo(mGroup);
+
+      // End Marker
+      if (route.geometry.length > 1) {
+        const endMarker = L.marker([end.lat, end.lng], {
+          icon: createDivIcon(endColor, 'E')
+        }).bindPopup(`<div class="text-xs font-semibold text-neutral-800 font-mono">Điểm cuối (${route.name})<br/>${end.lat.toFixed(6)}, ${end.lng.toFixed(6)}</div>`);
+        endMarker.addTo(mGroup);
+      }
+    };
+
+    // Draw each route
+    routesToRender.forEach(({ route, color, isPrimary, legendKey }) => {
+      if (route.geometry.length === 0) return;
+
+      // Determine width and opacity based on highlights and modes
+      let standardWidth = 6;
+      let opacity = 0.9;
+
+      if (mode === 'alternatives') {
+        const idx = alternativeRoutes.findIndex(r => r.id === route.id);
+        const isHighlighted = idx === activeAltIndex;
+        standardWidth = isHighlighted ? 7 : 4;
+        opacity = isHighlighted ? 0.95 : 0.25;
+      } else if (mode === 'compare') {
+        standardWidth = isPrimary ? 8 : 4.5;
+        opacity = isPrimary ? 0.95 : 0.55;
       }
 
-      // Add points sequentially to the drawing list
-      const currentSegment = geometry.slice(0, index + 1).map(pt => [pt.lat, pt.lng] as [number, number]);
-      animatedPolyline.setLatLngs(currentSegment);
-      index++;
-    }, intervalMs);
+      // Add coordinates to camera fitting list if this route is active/highlighted or comparing
+      const shouldFitThisRoute = 
+        mode === 'compare' || 
+        (mode === 'primary' && isPrimary) || 
+        (mode === 'alternatives' && alternativeRoutes.findIndex(r => r.id === route.id) === activeAltIndex);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [geometry, snappedWaypoints, showRoute, showMarkers, lineColor, lineWidth]);
+      if (shouldFitThisRoute) {
+        route.geometry.forEach(pt => {
+          visibleGeometriesForFitting.push(L.latLng(pt.lat, pt.lng));
+        });
+      }
+
+      // Helper to add hover popups & coordinate points
+      const setupInteractiveRoute = (polyline: L.Polyline) => {
+        // Z-Index priority: Primary always sits above others in compare
+        if (isPrimary && mode === 'compare') {
+          polyline.bringToFront();
+        }
+
+        // Hover events
+        polyline.on('mouseover', (e: L.LeafletMouseEvent) => {
+          polyline.setStyle({
+            weight: standardWidth + 3,
+            opacity: 1.0
+          });
+
+          L.popup()
+            .setLatLng(e.latlng)
+            .setContent(`
+              <div class="text-xs p-1 font-sans text-neutral-900 leading-normal">
+                <strong class="block text-blue-600 font-bold mb-0.5" style="color: ${color};">${route.name}</strong>
+                <b>Khoảng cách:</b> ${(route.distance / 1000).toFixed(2)} km<br/>
+                <b>Thời gian:</b> ${formatDuration(route.duration)}<br/>
+                <b>Số toạ độ:</b> ${route.geometry.length.toLocaleString()} điểm
+              </div>
+            `)
+            .openOn(map);
+        });
+
+        polyline.on('mouseout', () => {
+          polyline.setStyle({
+            weight: standardWidth,
+            opacity: opacity
+          });
+        });
+
+        // Click focus map bounds to this route
+        polyline.on('click', () => {
+          const bounds = polyline.getBounds();
+          map.fitBounds(bounds, { padding: [40, 40] });
+        });
+      };
+
+      // Draw coordinates as tiny circles if enabled
+      const drawCoordinateDots = (geom: Waypoint[]) => {
+        if (!showCoordinates) return;
+        geom.forEach(pt => {
+          L.circleMarker([pt.lat, pt.lng], {
+            radius: 2,
+            fillColor: color,
+            color: '#ffffff',
+            weight: 0.5,
+            fillOpacity: 1.0
+          }).addTo(rGroup);
+        });
+      };
+
+      // Draw markers
+      const startMarkerColor = isPrimary ? '#3b82f6' : color;
+      drawMarkersForRoute(route, startMarkerColor, '#ef4444');
+
+      if (animateRoute) {
+        // ANIMATED DRAWING MODE
+        // Speed scaling
+        const BASE_DURATION = 1500; // base ms
+        const animDuration = BASE_DURATION / animationSpeed;
+        const intervalMs = Math.max(4, Math.floor(animDuration / route.geometry.length));
+
+        // Create animated path
+        const animatedPolyline = L.polyline([[route.geometry[0].lat, route.geometry[0].lng]], {
+          color,
+          weight: standardWidth,
+          opacity,
+          lineJoin: 'round',
+          lineCap: 'round'
+        }).addTo(rGroup);
+
+        setupInteractiveRoute(animatedPolyline);
+
+        let index = 1;
+        const intervalId = setInterval(() => {
+          if (index >= route.geometry.length) {
+            clearInterval(intervalId);
+            // Draw points at coordinates if checked
+            drawCoordinateDots(route.geometry);
+            return;
+          }
+
+          const currentCoords = route.geometry.slice(0, index + 1).map(pt => [pt.lat, pt.lng] as [number, number]);
+          animatedPolyline.setLatLngs(currentCoords);
+          index++;
+        }, intervalMs);
+
+        animationIntervalsRef.current.push(intervalId);
+      } else {
+        // INSTANT DRAWING MODE
+        const polyline = L.polyline(
+          route.geometry.map(pt => [pt.lat, pt.lng] as [number, number]),
+          {
+            color,
+            weight: standardWidth,
+            opacity,
+            lineJoin: 'round',
+            lineCap: 'round'
+          }
+        ).addTo(rGroup);
+
+        setupInteractiveRoute(polyline);
+        drawCoordinateDots(route.geometry);
+      }
+    });
+
+    // 4. Fit map camera view to active routes
+    if (visibleGeometriesForFitting.length > 0) {
+      try {
+        const bounds = L.latLngBounds(visibleGeometriesForFitting);
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 15
+        });
+      } catch (e) {
+        console.error('Lỗi khi fitBounds:', e);
+      }
+    }
+
+  }, [mode, activeAltIndex, primaryRoute, alternativeRoutes, legendVisibility, showMarkers, showCoordinates, animateRoute, animationSpeed]);
+
+  // 4. Render Flood Zones
+  useEffect(() => {
+    const map = mapRef.current;
+    const fGroup = floodLayersRef.current;
+    if (!map || !fGroup) return;
+
+    fGroup.clearLayers();
+
+    if (!showFlood || !floodData) return;
+
+    try {
+      if (floodData.type === 'geojson') {
+        const geojson = L.geoJSON(floodData.data, {
+          style: (feature) => {
+            const color = feature?.properties?.color || '#ef4444';
+            const fillColor = feature?.properties?.fillColor || '#ef4444';
+            const fillOpacity = feature?.properties?.fillOpacity !== undefined ? feature?.properties?.fillOpacity : 0.35;
+            return {
+              color,
+              weight: 2,
+              fillColor,
+              fillOpacity,
+              dashArray: '4, 4'
+            };
+          },
+          onEachFeature: (feature, layer) => {
+            if (feature.properties?.name || feature.properties?.description) {
+              const name = feature.properties.name || "Vùng ngập lụt";
+              const desc = feature.properties.description || "Độ sâu ngập đáng báo động.";
+              layer.bindPopup(`<strong>${name}</strong><br/>${desc}`);
+            } else {
+              layer.bindPopup(`<strong>Khu vực ngập nước</strong><br/>Cảnh báo hạn chế di chuyển qua đây.`);
+            }
+          }
+        }).addTo(fGroup);
+
+        const bounds = geojson.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
+      } else if (floodData.type === 'polygon') {
+        const latlngs = floodData.coordinates.map((pt: any) => [pt.lat, pt.lng]);
+        const polygon = L.polygon(latlngs, {
+          color: '#ef4444',
+          fillColor: '#ef4444',
+          fillOpacity: 0.35,
+          weight: 2,
+          dashArray: '4, 4'
+        }).addTo(fGroup).bindPopup('<strong>Khu vực ngập nước</strong><br/>Cảnh báo hạn chế di chuyển.');
+
+        map.fitBounds(polygon.getBounds(), { padding: [50, 50], maxZoom: 15 });
+      }
+    } catch (err) {
+      console.error("Lỗi khi vẽ vùng ngập lụt:", err);
+    }
+  }, [floodData, showFlood]);
 
   return (
     <div className="w-full h-full relative" style={{ minHeight: '520px' }}>
       <div ref={mapContainerRef} className="w-full h-full rounded-lg absolute inset-0 z-10" />
-      {/* Custom Styles overrides for Leaflet Dark Mode popups */}
+      {/* Custom Styles overrides */}
       <style jsx global>{`
         .leaflet-container {
           background: #171717;
@@ -221,6 +452,7 @@ export default function RouteMapInner({
         .leaflet-bar {
           border: 1px solid var(--border) !important;
           box-shadow: var(--shadow-md) !important;
+          z-index: 20 !important;
         }
         .leaflet-bar a {
           background-color: #1f1f1f !important;

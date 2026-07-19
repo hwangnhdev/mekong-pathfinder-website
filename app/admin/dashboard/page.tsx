@@ -130,18 +130,18 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const gameAction = async (action: string) => {
+  const gameAction = async (action: string, payload: any = {}) => {
     try {
       const res = await fetch('/api/game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, roomCode }),
+        body: JSON.stringify({ action, roomCode, ...payload }),
       });
       const data = await res.json();
       if (data.success) {
         setRoomData(data.room);
         if (action === 'start' || action === 'next_step') {
-          startRoundTimer();
+          startRoundTimer(data.room.isDevMode);
         }
         if (action === 'reset') {
           setShowResults(false);
@@ -151,8 +151,13 @@ export default function AdminDashboardPage() {
     } catch { }
   };
 
-  const startRoundTimer = () => {
+  const startRoundTimer = (isDevMode: boolean = false) => {
     setShowResults(false);
+    if (isDevMode) {
+      setCountdown(9999);
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
     setCountdown(8);
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -298,13 +303,22 @@ export default function AdminDashboardPage() {
                       </div>
 
                       {roomData?.status === 'waiting' && (
-                        <div className="admin-controls-row">
+                        <div className="admin-controls-row" style={{ display: 'flex', gap: '10px' }}>
                           <button
                             className="admin-btn primary large"
                             onClick={() => gameAction('start')}
                             disabled={!roomData?.players.length}
+                            style={{ flex: 1 }}
                           >
                             <Play size={18} /> Bắt đầu Trận đấu
+                          </button>
+                          <button
+                            className="admin-btn secondary large"
+                            onClick={() => gameAction('start', { isDevMode: true })}
+                            disabled={!roomData?.players.length}
+                            style={{ flex: 1, background: '#f59e0b', color: '#fff', border: 'none' }}
+                          >
+                            <Play size={18} /> Vào trận (Dev Mode)
                           </button>
                         </div>
                       )}
@@ -315,24 +329,40 @@ export default function AdminDashboardPage() {
                             <div className="admin-round-label">
                               <span>Bước {roomData.currentStep} / {ROUND_1_GRAPH.totalSteps}</span>
                             </div>
-                            <div className="admin-timer">
-                              <Clock size={16} />
-                              <span className={countdown <= 3 ? 'danger' : ''}>{countdown}s</span>
-                            </div>
+                            {roomData.isDevMode ? (
+                              <div className="admin-timer" style={{ background: '#f59e0b', color: '#fff', borderColor: '#f59e0b' }}>
+                                <Sparkles size={14} />
+                                <span>Dev Mode</span>
+                              </div>
+                            ) : (
+                              <div className="admin-timer">
+                                <Clock size={16} />
+                                <span className={countdown <= 3 ? 'danger' : ''}>{countdown}s</span>
+                              </div>
+                            )}
                             <div className="admin-answers-count">
                               <CheckCircle2 size={14} />
                               {roomData.players.filter((p: any) => p.currentChoice !== null).length} / {roomData.players.length} đã trả lời
                             </div>
                           </div>
 
-                          {showResults && (
-                            <div className="admin-controls-row">
+                          {(roomData.isDevMode || showResults) && (
+                            <div className="admin-controls-row" style={{ display: 'flex', gap: '10px' }}>
+                              {roomData.isDevMode && roomData.currentStep > 1 && (
+                                <button 
+                                  className="admin-btn secondary large" 
+                                  onClick={() => gameAction('prev_step')}
+                                  style={{ flex: 1, background: '#475569', color: '#fff', border: 'none' }}
+                                >
+                                  Quay lại (Bước {roomData.currentStep - 1})
+                                </button>
+                              )}
                               {roomData.currentStep < ROUND_1_GRAPH.totalSteps ? (
-                                <button className="admin-btn primary large" onClick={() => gameAction('next_step')}>
+                                <button className="admin-btn primary large" onClick={() => gameAction('next_step')} style={{ flex: 1 }}>
                                   <ArrowRight size={18} /> Đi tiếp (Bước {roomData.currentStep + 1})
                                 </button>
                               ) : (
-                                <button className="admin-btn success large" onClick={() => gameAction('next_step')}>
+                                <button className="admin-btn success large" onClick={() => gameAction('next_step')} style={{ flex: 1 }}>
                                   <Award size={18} /> Xem Kết quả
                                 </button>
                               )}
@@ -355,6 +385,15 @@ export default function AdminDashboardPage() {
                                 </div>
                               ))}
                             </div>
+                          )}
+                          {roomData.isDevMode && (
+                            <button 
+                              className="admin-btn secondary large" 
+                              onClick={() => gameAction('prev_step')}
+                              style={{ width: '100%', marginTop: '15px', background: '#475569', color: '#fff', border: 'none' }}
+                            >
+                              Quay lại (Bước {roomData.currentStep})
+                            </button>
                           )}
                         </div>
                       )}

@@ -4,13 +4,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {
-  Play, Users, CheckCircle2, AlertTriangle, Clock, Award, MapPin
+  Play, Users, CheckCircle2, AlertTriangle, Clock, Award, MapPin, Sparkles
 } from 'lucide-react';
 import logo04 from '../../../assets/images/logo_header/logo-04.png';
 import { ROUND_1_GRAPH } from '../gameData';
 
 // Dynamically load the Leaflet map without SSR
-const MobileMap = dynamic(() => import('./MobileMap'), { ssr: false, loading: () => <div style={{ height: 300, background: '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Đang tải bản đồ...</div> });
+const MobileMap = dynamic(() => import('./MobileMap'), { ssr: false, loading: () => <div style={{ height: 180, background: '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Đang tải bản đồ...</div> });
 
 // A simple Error Boundary to display errors on mobile screens instead of a blank page
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
@@ -52,7 +52,7 @@ function PlayerJoinPageInner() {
   const [playerId, setPlayerId] = useState('');
   const [roomData, setRoomData] = useState<any>(null);
   const [playerChoice, setPlayerChoice] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(8); // 8 seconds per step
+  const [timeRemaining, setTimeRemaining] = useState(15); // 15 seconds per step
   const [errorMsg, setErrorMsg] = useState('');
   const [joined, setJoined] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -60,6 +60,7 @@ function PlayerJoinPageInner() {
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const prevStepRef = useRef<number>(0);
+  const serverTimeOffsetRef = useRef<number>(0);
 
   useEffect(() => {
     setMounted(true);
@@ -95,12 +96,20 @@ function PlayerJoinPageInner() {
         const data = await res.json();
         if (data.success) {
           const room = data.room;
+          if (data.serverTime) {
+            serverTimeOffsetRef.current = data.serverTime - Date.now();
+          }
           // Reset choice when step advances
           if (room.currentStep !== prevStepRef.current) {
             setPlayerChoice(null);
           }
           prevStepRef.current = room.currentStep;
           setRoomData(room);
+        } else {
+          // Reset status if room is no longer active on the server
+          setJoined(false);
+          setRoomData(null);
+          setErrorMsg('Phòng chơi không tồn tại hoặc đã bị đặt lại.');
         }
       } catch { }
     };
@@ -112,8 +121,15 @@ function PlayerJoinPageInner() {
   // Sync timer from server stepStartedAt
   useEffect(() => {
     if (roomData?.status === 'in_progress' && roomData.stepStartedAt) {
-      const elapsed = Math.floor((Date.now() - roomData.stepStartedAt) / 1000);
-      const remaining = Math.max(8 - elapsed, 0);
+      if (roomData.isDevMode) {
+        setTimeRemaining(9999);
+        if (timerRef.current) clearInterval(timerRef.current);
+        return;
+      }
+
+      const serverNow = Date.now() + serverTimeOffsetRef.current;
+      const elapsed = Math.floor((serverNow - roomData.stepStartedAt) / 1000);
+      const remaining = Math.max(15 - elapsed, 0);
       setTimeRemaining(remaining);
 
       if (timerRef.current) clearInterval(timerRef.current);
@@ -128,7 +144,7 @@ function PlayerJoinPageInner() {
       }, 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [roomData?.currentStep, roomData?.status]);
+  }, [roomData?.currentStep, roomData?.stepStartedAt, roomData?.status]);
 
   const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +162,9 @@ function PlayerJoinPageInner() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.serverTime) {
+          serverTimeOffsetRef.current = data.serverTime - Date.now();
+        }
         setRoomData(data.room);
         setJoined(true);
       } else {
@@ -158,8 +177,13 @@ function PlayerJoinPageInner() {
 
   const handleSelectEdge = async (edgeId: string) => {
     if (!roomData?.stepStartedAt) return;
-    const elapsed = Math.floor((Date.now() - roomData.stepStartedAt) / 1000);
-    if (elapsed > 8 || playerChoice !== null) return;
+    const serverNow = Date.now() + serverTimeOffsetRef.current;
+    const elapsed = Math.floor((serverNow - roomData.stepStartedAt) / 1000);
+    
+    const isDevMode = !!roomData.isDevMode;
+    if (!isDevMode) {
+      if (elapsed > 15 || playerChoice !== null) return;
+    }
 
     setPlayerChoice(edgeId);
     try {
@@ -174,7 +198,7 @@ function PlayerJoinPageInner() {
           roomCode,
           playerId,
           edgeId,
-          timeTaken: Math.min(elapsed, 8),
+          timeTaken: Math.min(elapsed, 15),
         }),
       });
     } catch { }
@@ -183,10 +207,14 @@ function PlayerJoinPageInner() {
   if (!mounted) return null;
 
   const me = roomData?.players?.find((p: any) => p.id === playerId);
+  const serverNow = Date.now() + serverTimeOffsetRef.current;
   const elapsedSeconds = roomData?.stepStartedAt
-    ? Math.floor((Date.now() - roomData.stepStartedAt) / 1000)
+    ? Math.floor((serverNow - roomData.stepStartedAt) / 1000)
     : 0;
-  const isSelectionActive = elapsedSeconds <= 8 && playerChoice === null;
+  
+  const isSelectionActive = roomData?.isDevMode
+    ? roomData.status === 'in_progress'
+    : (elapsedSeconds <= 15 && playerChoice === null);
 
   let currentNode = null;
   let availableEdges: any[] = [];
@@ -231,40 +259,98 @@ function PlayerJoinPageInner() {
           </div>
         )}
 
-        {joined && roomData?.status === 'waiting' && (
-          <div className="join-card waiting">
-            <CheckCircle2 size={40} />
-            <h2>Đã tham gia!</h2>
-            <p>Chào <strong>{playerName}</strong>, bạn đang trong phòng <strong>{roomCode}</strong>.</p>
-            <div className="join-pulse-text">Đang chờ Host bắt đầu...</div>
+        {/* Case 2: Joined and Kicked out (host reset) -> Thank You Screen */}
+        {joined && roomData && !me && (
+          <div className="join-card finished" style={{ textAlign: 'center' }}>
+            <Award size={48} style={{ color: 'var(--primary)', margin: '0 auto 15px', display: 'block' }} />
+            <h2 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Cảm ơn bạn đã tham gia!</h2>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '20px' }}>
+              Trận đấu đã kết thúc và phòng chơi đã được Host đặt lại. Cảm ơn bạn đã đồng hành cùng Mekong Pathfinder trong hành trình giảm thiểu rủi ro ngập lụt!
+            </p>
+            <button 
+              onClick={() => {
+                setJoined(false);
+                setRoomData(null);
+                setPlayerChoice(null);
+              }} 
+              className="join-btn" 
+              style={{ width: '100%', marginTop: '10px' }}
+            >
+              Tham gia phòng mới
+            </button>
+            <button 
+              onClick={() => {
+                window.location.href = 'https://mekongpathfinder.vn/';
+              }} 
+              className="join-btn" 
+              style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', color: 'var(--text)' }}
+            >
+              Qua xem Website
+            </button>
+          </div>
+        )}
+
+        {/* Case 3: Joined and Room is in waiting status (waiting for host to start) -> Waiting with Rules */}
+        {joined && roomData?.status === 'waiting' && me && (
+          <div className="join-card waiting" style={{ maxWidth: '440px', textAlign: 'left' }}>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <CheckCircle2 size={40} style={{ color: 'var(--success)', margin: '0 auto 10px', display: 'block' }} />
+              <h2 style={{ margin: '0 0 5px', textAlign: 'center' }}>Đã tham gia!</h2>
+              <p style={{ margin: 0, textAlign: 'center' }}>Chào <strong>{playerName}</strong>, bạn đang trong phòng <strong>{roomCode}</strong>.</p>
+              <div className="join-pulse-text" style={{ marginTop: '10px', fontWeight: 'bold', color: 'var(--primary)', textAlign: 'center' }}>Đang chờ Host bắt đầu...</div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', marginTop: '20px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Hướng dẫn & Luật chơi</h4>
+              <ul style={{ fontSize: '12.5px', color: 'var(--text-muted)', paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: '1.5' }}>
+                <li>🏁 <strong>Nhiệm vụ:</strong> Di chuyển từ Đại học Cần Thơ về đích an toàn, tránh các tuyến đường ngập lụt.</li>
+                <li>⏱️ <strong>Thời gian:</strong> Tại mỗi giao lộ, bạn chỉ có <strong>8 giây</strong> để chọn ngã rẽ. Nếu hết giờ, bạn sẽ bị phạt kẹt xe!</li>
+                <li>⚠️ <strong>Rủi ro ngập:</strong> Các tuyến đường có 3 mức độ: <em>An toàn, Ngập vừa</em> và <em>Ngập sâu</em>. Đi vào vùng ngập sâu sẽ bị trừ nhiều điểm.</li>
+                <li>🧠 <strong>AI Trợ lý:</strong> Hãy tham khảo ý kiến phân tích của AI Mekong Pathfinder trên màn hình chính để đưa ra lựa chọn sáng suốt.</li>
+                <li>🏆 <strong>Điểm số:</strong> Về đích an toàn với thời gian nhanh nhất để đạt thứ hạng cao nhất trên Bảng xếp hạng.</li>
+              </ul>
+            </div>
           </div>
         )}
 
         {joined && roomData?.status === 'in_progress' && currentNode && (
-          <div className="join-gameplay" style={{ padding: '0 10px' }}>
-            <div className="join-round-bar" style={{ marginBottom: 15 }}>
+          <div className="join-gameplay" style={{ padding: '0 4px' }}>
+            <div className="join-round-bar" style={{ marginBottom: 10 }}>
               <div>
                 <span className="join-round-label">Bước {roomData.currentStep}/{ROUND_1_GRAPH.totalSteps}</span>
                 <strong style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <MapPin size={14} /> {currentNode.name}
                 </strong>
               </div>
-              <div className="join-timer">
-                <Clock size={14} />
-                <span className={timeRemaining <= 3 ? 'danger' : ''}>{timeRemaining}s</span>
-              </div>
-            </div>
-
-            <MobileMap currentNode={currentNode} availableEdges={availableEdges} />
-
-            <div style={{ marginTop: 15 }}>
-              {playerChoice !== null && (
-                <div className="join-locked" style={{ marginBottom: 15 }}>
-                  <CheckCircle2 size={16} /> Đã chọn, chờ người khác...
+              {roomData.isDevMode ? (
+                <div className="join-timer" style={{ background: '#f59e0b', color: '#fff', borderColor: '#f59e0b' }}>
+                  <Sparkles size={12} />
+                  <span>Dev Mode</span>
+                </div>
+              ) : (
+                <div className="join-timer">
+                  <Clock size={14} />
+                  <span className={timeRemaining <= 3 ? 'danger' : ''}>{timeRemaining}s</span>
                 </div>
               )}
-              {elapsedSeconds > 8 && playerChoice === null && (
-                <div className="join-expired" style={{ marginBottom: 15 }}>
+            </div>
+
+            <MobileMap currentNode={currentNode} availableEdges={availableEdges} pathHistory={me.pathHistory || []} playerChoice={playerChoice} />
+
+            <div style={{ marginTop: 10 }}>
+              {playerChoice !== null && (
+                roomData.isDevMode ? (
+                  <div className="join-locked" style={{ marginBottom: 10, background: '#fef3c7', borderColor: '#f59e0b', color: '#b45309' }}>
+                    <Sparkles size={16} /> Chế độ Dev: Bạn có thể thay đổi hướng đi
+                  </div>
+                ) : (
+                  <div className="join-locked" style={{ marginBottom: 10 }}>
+                    <CheckCircle2 size={16} /> Đã chọn, chờ người khác...
+                  </div>
+                )
+              )}
+              {elapsedSeconds > 15 && playerChoice === null && (
+                <div className="join-expired" style={{ marginBottom: 10 }}>
                   <AlertTriangle size={16} /> Hết thời gian!
                 </div>
               )}
@@ -273,12 +359,16 @@ function PlayerJoinPageInner() {
                 {availableEdges.map(edge => {
                   const isSelected = playerChoice === edge.id;
                   return (
-                    <button
+                    <div
                       key={edge.id}
-                      disabled={!isSelectionActive}
-                      onClick={() => handleSelectEdge(edge.id)}
+                      onClick={() => isSelectionActive && handleSelectEdge(edge.id)}
                       className={`join-route-btn ${isSelected ? 'selected' : ''} ${!isSelectionActive && !isSelected ? 'disabled' : ''}`}
-                      style={{ borderLeft: `6px solid ${edge.color}` }}
+                      style={{ 
+                        borderLeft: `6px solid ${edge.color}`,
+                        cursor: isSelectionActive ? 'pointer' : 'default'
+                      }}
+                      role="button"
+                      tabIndex={0}
                     >
                       <div className="join-route-top">
                         <span className={`join-route-letter ${isSelected ? 'active' : ''}`} style={{ backgroundColor: isSelected ? edge.color : 'rgba(255,255,255,0.1)' }}>{edge.letter}</span>
@@ -291,7 +381,7 @@ function PlayerJoinPageInner() {
                         <span className="time-tag">⏱️ {edge.time}s</span>
                       </div>
                       <p className="join-route-desc">{edge.desc}</p>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -309,6 +399,26 @@ function PlayerJoinPageInner() {
               </div>
             )}
             <p>Hãy xem bảng xếp hạng trên màn hình Host!</p>
+            <button 
+              onClick={() => {
+                setJoined(false);
+                setRoomData(null);
+                setPlayerChoice(null);
+              }} 
+              className="join-btn" 
+              style={{ width: '100%', marginTop: '20px' }}
+            >
+              Tham gia phòng mới
+            </button>
+            <button 
+              onClick={() => {
+                window.location.href = 'https://mekongpathfinder.vn/';
+              }} 
+              className="join-btn" 
+              style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', color: 'var(--text)' }}
+            >
+              Qua xem Website
+            </button>
           </div>
         )}
       </div>

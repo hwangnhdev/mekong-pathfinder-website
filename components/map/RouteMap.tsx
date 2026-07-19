@@ -1,5 +1,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
+import { RouteDetail } from '../../utils/routeUtils';
 
 interface Waypoint {
   lat: number;
@@ -7,14 +8,19 @@ interface Waypoint {
 }
 
 interface RouteMapProps {
-  geometry: Waypoint[];
-  snappedWaypoints: Waypoint[];
-  showRoute: boolean;
+  mode: 'primary' | 'alternatives' | 'compare';
+  activeAltIndex: number;
+  primaryRoute: RouteDetail | null;
+  alternativeRoutes: RouteDetail[];
+  legendVisibility: Record<string, boolean>;
   showMarkers: boolean;
-  lineWidth: number;
-  lineColor: string;
   theme: 'light' | 'dark';
   onMapClick?: (lat: number, lng: number) => void;
+  showCoordinates: boolean;
+  animateRoute: boolean;
+  animationSpeed: number;
+  floodData?: any;
+  showFlood?: boolean;
 }
 
 // Dynamically import the leaflet inner map with ssr disabled

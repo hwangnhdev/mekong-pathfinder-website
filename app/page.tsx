@@ -15,9 +15,9 @@ import SectionStory from '@/components/SectionStory'
 export default function HomePage() {
   return (
     <>
-      {/* <VideoIntro /> */}
+      <VideoIntro />
       <Header />
-      {/* <Hero /> */}
+      <Hero />
       <SectionStory />
       <SectionIntro />
       <SectionAISolution />
