@@ -1,27 +1,31 @@
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
-import SectionStory from '@/components/SectionStory'
-import SectionProblem from '@/components/SectionProblem'
-import SectionBenefits from '@/components/SectionBenefits'
-import SectionDemo from '@/components/SectionDemo'
-// import SectionGallery from '@/components/SectionGallery'
-// import SectionSolution from '@/components/SectionSolution'
+import VideoIntro from '@/components/VideoIntro'
+import SectionIntro from '@/components/SectionIntro'
+import SectionAISolution from '@/components/SectionAISolution'
+import SectionProductDemo from '@/components/SectionProductDemo'
+import SectionFeatureExperience from '@/components/SectionFeatureExperience'
+import SectionInfo from '@/components/SectionInfo'
 import SectionTeam from '@/components/SectionTeam'
 import SectionCTA from '@/components/SectionCTA'
+import SectionContact from '@/components/SectionContact'
 import Footer from '@/components/Footer'
+import SectionStory from '@/components/SectionStory'
 
 export default function HomePage() {
   return (
     <>
+      {/* <VideoIntro /> */}
       <Header />
-      <Hero />
+      {/* <Hero /> */}
       <SectionStory />
-      <SectionProblem />
-      <SectionBenefits />
-      <SectionDemo />
+      <SectionIntro />
+      <SectionAISolution />
+      <SectionProductDemo />
+      <SectionFeatureExperience />
+      <SectionInfo />
       <SectionTeam />
-      {/* <SectionGallery />
-      <SectionSolution /> */}
+      <SectionContact />
       <SectionCTA />
       <Footer />
     </>

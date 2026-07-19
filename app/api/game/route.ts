@@ -1,0 +1,212 @@
+import { NextResponse } from 'next/server';
+import os from 'os';
+import { ROUND_1_GRAPH } from '../../game/gameData';
+
+interface Player {
+  id: string;
+  name: string;
+  score: number;
+  currentNodeId: string; // Tracks where they are in the graph
+  pathHistory: string[]; // List of edge IDs they have traversed
+  currentChoice: string | null; // The edge ID they selected for the current step
+  timeTaken: number;
+}
+
+interface Room {
+  code: string;
+  status: 'waiting' | 'in_progress' | 'finished';
+  currentRound: 1 | 2;
+  currentStep: number; // 1, 2, 3...
+  stepStartedAt?: number;
+  players: Player[];
+}
+
+// In-memory rooms cache
+const rooms: Map<string, Room> = (global as any).gameRooms || new Map();
+(global as any).gameRooms = rooms;
+
+function getLocalIpAddress() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      const familyV4 = typeof net.family === 'string' ? net.family === 'IPv4' : net.family === 4;
+      if (familyV4 && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+const TOKEN_SECRET = 'mp-admin-token-2026';
+
+function isValidAdminToken(token: string): boolean {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    if (!decoded.startsWith(TOKEN_SECRET + ':')) return false;
+    const timestamp = parseInt(decoded.split(':')[1], 10);
+    return Date.now() - timestamp < 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { action } = body;
+
+    if (action === 'getInfo') {
+      return NextResponse.json({ success: true, localIp: getLocalIpAddress() });
+    }
+
+    if (action === 'create') {
+      const { adminToken } = body;
+      if (!adminToken || !isValidAdminToken(adminToken)) {
+        return NextResponse.json({ success: false, error: 'Bạn cần đăng nhập Admin để tạo phòng.' }, { status: 401 });
+      }
+
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const newRoom: Room = {
+        code,
+        status: 'waiting',
+        currentRound: 1,
+        currentStep: 1,
+        players: [],
+      };
+      rooms.set(code, newRoom);
+      return NextResponse.json({ success: true, roomCode: code, localIp: getLocalIpAddress() });
+    }
+
+    if (action === 'join') {
+      const { roomCode, playerName, playerId } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+      if (room.status !== 'waiting') return NextResponse.json({ success: false, error: 'Phòng đã bắt đầu hoặc đã kết thúc!' });
+
+      const existingPlayer = room.players.find(p => p.id === playerId);
+      if (!existingPlayer) {
+        room.players.push({
+          id: playerId,
+          name: playerName.substring(0, 12),
+          score: 0,
+          currentNodeId: 'start',
+          pathHistory: [],
+          currentChoice: null,
+          timeTaken: 0,
+        });
+      }
+      return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'status') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+      return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'start') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+
+      room.status = 'in_progress';
+      room.currentRound = 1;
+      room.currentStep = 1;
+      room.stepStartedAt = Date.now();
+      
+      const startNode = ROUND_1_GRAPH.startingNodeId;
+      room.players.forEach(p => {
+        p.score = 0;
+        p.currentNodeId = startNode;
+        p.pathHistory = [];
+        p.currentChoice = null;
+        p.timeTaken = 0;
+      });
+      return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'select') {
+      const { roomCode, playerId, edgeId, timeTaken } = body; // edgeId is the choice
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+      
+      const player = room.players.find(p => p.id === playerId);
+      if (!player) return NextResponse.json({ success: false, error: 'Người chơi không có trong phòng!' });
+      if (player.currentChoice !== null) return NextResponse.json({ success: false, error: 'Bạn đã chọn rồi!' });
+
+      player.currentChoice = edgeId;
+      player.timeTaken = timeTaken;
+
+      return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'next_step') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+
+      const maxSteps = ROUND_1_GRAPH.totalSteps; // typically 3
+
+      // Process all choices for the current step
+      room.players.forEach(p => {
+        if (p.currentChoice) {
+          const chosenEdge = ROUND_1_GRAPH.edges.find(e => e.id === p.currentChoice);
+          if (chosenEdge) {
+            p.pathHistory.push(chosenEdge.id);
+            p.currentNodeId = chosenEdge.to; // Move player to new node
+
+            // Calculate score for this step
+            let points = 50; // base score for making a move
+            if (chosenEdge.risk === 'none') points += 50;
+            if (chosenEdge.risk === 'medium') points += 20;
+            if (chosenEdge.risk === 'high') points -= 30; // penalty
+
+            // Speed bonus
+            if (p.timeTaken <= 2) points += 20;
+            else if (p.timeTaken <= 5) points += 10;
+
+            p.score += points;
+          }
+        }
+        
+        // Reset choice for the next turn
+        p.currentChoice = null;
+        p.timeTaken = 0;
+      });
+
+      if (room.currentStep >= maxSteps) {
+        room.status = 'finished';
+      } else {
+        room.currentStep += 1;
+        room.stepStartedAt = Date.now();
+      }
+
+      return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'end') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+      room.status = 'finished';
+      return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'reset') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+      room.status = 'waiting';
+      room.currentRound = 1;
+      room.currentStep = 1;
+      room.players = [];
+      return NextResponse.json({ success: true, room });
+    }
+
+    return NextResponse.json({ success: false, error: 'Hành động không hợp lệ!' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message });
+  }
+}

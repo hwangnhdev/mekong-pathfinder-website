@@ -152,7 +152,7 @@ export default function Hero() {
       floodPatchesRef.current.push(p);
     });
 
-    const count = 2000;
+    const count = 800;
     const rainGeo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -208,18 +208,110 @@ export default function Hero() {
     routeLineRef.current = routeLine;
 
     const g = new THREE.Group();
+
+    // Sleek body/chassis (Electric Orange/Yellow)
+    const bodyMat = new THREE.MeshPhongMaterial({
+      color: 0xff8c00,
+      emissive: 0xff3700,
+      emissiveIntensity: 0.4,
+      shininess: 90,
+    });
     const body = new THREE.Mesh(
-      new THREE.BoxGeometry(0.72, 0.26, 0.4),
-      new THREE.MeshPhongMaterial({ color: 0x4361ee, emissive: 0x2f4fd4, emissiveIntensity: 0.5 })
+      new THREE.BoxGeometry(0.5, 0.16, 0.9), // X: width, Y: height, Z: length
+      bodyMat
     );
-    body.position.set(0, 0, 0);
+    body.position.set(0, 0.16, 0);
     g.add(body);
-    const cab = new THREE.Mesh(
-      new THREE.BoxGeometry(0.36, 0.22, 0.36),
-      new THREE.MeshPhongMaterial({ color: 0x00b4d8, emissive: 0x006688, emissiveIntensity: 0.5 })
+
+    // Sleek cabin/windows (Dark glossy blue)
+    const cabinMat = new THREE.MeshPhongMaterial({
+      color: 0x111827,
+      emissive: 0x1d4ed8,
+      emissiveIntensity: 0.2,
+      shininess: 100,
+    });
+    const cabin = new THREE.Mesh(
+      new THREE.BoxGeometry(0.42, 0.16, 0.44),
+      cabinMat
     );
-    cab.position.set(0, 0.22, 0.2);
-    g.add(cab);
+    cabin.position.set(0, 0.3, -0.05);
+    g.add(cabin);
+
+    // Slanted windshield
+    const windshieldMat = new THREE.MeshPhongMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.7,
+      shininess: 90,
+    });
+    const windshield = new THREE.Mesh(
+      new THREE.BoxGeometry(0.4, 0.14, 0.15),
+      windshieldMat
+    );
+    windshield.position.set(0, 0.26, 0.18);
+    windshield.rotation.x = Math.PI / 6;
+    g.add(windshield);
+
+    // 4 Wheels + 4 Metallic rims
+    const wheelGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16);
+    const wheelMat = new THREE.MeshPhongMaterial({
+      color: 0x1f2937,
+      shininess: 10,
+    });
+    const rimGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.11, 8);
+    const rimMat = new THREE.MeshStandardMaterial({
+      color: 0xe2e8f0,
+      roughness: 0.2,
+      metalness: 0.8,
+    });
+
+    const wheelPositions = [
+      { x: 0.26, z: 0.24 },  // Front Left
+      { x: -0.26, z: 0.24 }, // Front Right
+      { x: 0.26, z: -0.24 }, // Rear Left
+      { x: -0.26, z: -0.24 },// Rear Right
+    ];
+
+    wheelPositions.forEach((pos) => {
+      // Tire
+      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(pos.x, 0.12, pos.z);
+      g.add(wheel);
+
+      // Rim
+      const rim = new THREE.Mesh(rimGeo, rimMat);
+      rim.rotation.z = Math.PI / 2;
+      rim.position.set(pos.x, 0.12, pos.z);
+      g.add(rim);
+    });
+
+    // Glowing white headlights
+    const headlightGeo = new THREE.BoxGeometry(0.08, 0.05, 0.05);
+    const headlightMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+    });
+    const hlLeft = new THREE.Mesh(headlightGeo, headlightMat);
+    hlLeft.position.set(0.16, 0.16, 0.45);
+    const hlRight = new THREE.Mesh(headlightGeo, headlightMat);
+    hlRight.position.set(-0.16, 0.16, 0.45);
+    g.add(hlLeft);
+    g.add(hlRight);
+
+    // Glowing red taillights
+    const taillightGeo = new THREE.BoxGeometry(0.08, 0.05, 0.05);
+    const taillightMat = new THREE.MeshBasicMaterial({
+      color: 0xef233c,
+    });
+    const tlLeft = new THREE.Mesh(taillightGeo, taillightMat);
+    tlLeft.position.set(0.16, 0.16, -0.45);
+    const tlRight = new THREE.Mesh(taillightGeo, taillightMat);
+    tlRight.position.set(-0.16, 0.16, -0.45);
+    g.add(tlLeft);
+    g.add(tlRight);
+
     g.position.set(-13, 0.68, 7);
     g.visible = false;
     scene.add(g);
@@ -343,11 +435,12 @@ export default function Hero() {
 
   return (
     <section id="hero">
+      <div className="hero-top-overlay" />
       {!mounted && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white z-50">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <div className="text-sm text-muted-foreground">Đang tải 3D...</div>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', zIndex: 50 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: 40, height: 40, border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Đang tải 3D...</div>
           </div>
         </div>
       )}
@@ -394,7 +487,7 @@ export default function Hero() {
         <h1 className="hero-title">
           Mekong Pathfinder<br />
           <span className="accent">bạn tìm đường,</span><br />
-          chúng tôi lo lũ
+          <span>chúng tôi lo lũ</span>
         </h1>
 
         <p className="hero-sub">

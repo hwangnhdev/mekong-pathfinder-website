@@ -1,6 +1,6 @@
 export default function SectionStory() {
   return (
-    <div className="section-story">
+    <div className="section-story" id="story">
       <div className="story-inner">
         <div className="story-eyebrow">Câu chuyện</div>
         <div className="story-quote">

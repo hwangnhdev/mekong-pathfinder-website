@@ -1,0 +1,27 @@
+---
+title: "AI của Mekong Pathfinder hoạt động như thế nào?"
+date: "2025-10-01"
+category: "Công nghệ"
+desc: "Khám phá thuật toán dự đoán điểm ngập lụt và tối ưu lộ trình thích ứng thông minh dựa trên dữ liệu khí tượng."
+cover: "/blog-02.png"
+---
+
+# AI của Mekong Pathfinder hoạt động như thế nào?
+
+Điểm khác biệt của **Mekong Pathfinder** so với các ứng dụng bản đồ thông thường chính là lõi xử lý trí tuệ nhân tạo (AI Route Engine). Đây là hệ thống phân tích đa tầng giúp biến đổi các dữ liệu thô thành chỉ dẫn giao thông hữu ích cho người dân.
+
+## 1. Thu thập dữ liệu đa tầng
+Hàng giây, hệ thống AI quét và tiếp nhận thông tin từ:
+- Dữ liệu mực nước triều cường từ trạm khí tượng thủy văn.
+- Dữ liệu lượng mưa thời gian thực.
+- Trạng thái dòng chảy từ 247 cảm biến IoT đô thị.
+- Các bài báo cáo gửi trực tiếp từ hiện trường của người dân.
+
+## 2. Xác thực báo cáo bằng học máy (AI Verification)
+Khi người dân gửi báo cáo ngập nước, mô hình thị giác máy tính của chúng tôi sẽ phân tích hình ảnh đính kèm để:
+- Xác nhận bức ảnh chụp cảnh ngập lụt thực sự.
+- Ước tính độ sâu mực nước dựa trên các vật thể tham chiếu như bánh xe, vỉa hè.
+- Phát hiện các báo cáo giả mạo hoặc sai lệch chỉ trong vòng 2 giây.
+
+## 3. Thuật toán tìm đường tránh ngập thích ứng
+Thay vì tìm đường đi ngắn nhất (như thuật toán Dijkstra truyền thống), AI tối ưu hóa lộ trình bằng cách gán trọng số phạt (penalty weights) cực cao cho các tuyến đường đang ngập nước. Từ đó, công cụ gợi ý hành trình đảm bảo an toàn tuyệt đối cho người tham gia giao thông.

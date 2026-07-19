@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="vi" className={beVietnamPro.variable}>
-      <body style={{ fontFamily: 'var(--font-be-vietnam), sans-serif' }}>
+    <html lang="vi" className={beVietnamPro.variable} suppressHydrationWarning>
+      <body style={{ fontFamily: 'var(--font-be-vietnam), sans-serif' }} suppressHydrationWarning>
         {children}
       </body>
     </html>
