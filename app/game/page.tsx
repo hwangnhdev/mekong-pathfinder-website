@@ -12,7 +12,7 @@ import {
 import logo04 from '../../assets/images/logo_header/logo-04.png';
 
 /* ── GAME DATA CONFIG ── */
-const ROUNDS_DATA = {
+const ROUNDS_DATA: Record<number, any> = {
   1: {
     round: 1,
     startingPoint: 'Đại học Cần Thơ (Khu II)',
@@ -405,7 +405,7 @@ function SoloGameComponent() {
 
             {/* Routes Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
-              {activeRoundData.routes.map(route => {
+              {activeRoundData.routes.map((route: any) => {
                 const isSelected = playerChoice === route.letter;
                 const isSelectionActive = selectionTime > 0 && playerChoice === null;
                 
@@ -433,7 +433,7 @@ function SoloGameComponent() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ width: '28px', height: '28px', borderRadius: '6px', background: isSelected ? 'var(--primary)' : 'var(--border-strong)', color: isSelected ? '#fff' : 'var(--text)', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontWeight: '800', fontSize: '14px', justifyContent: 'center' }}>
+                        <span style={{ width: '28px', height: '28px', borderRadius: '6px', background: isSelected ? 'var(--primary)' : 'var(--border-strong)', color: isSelected ? '#fff' : 'var(--text)', display: 'flex', alignItems: 'center', fontWeight: '800', fontSize: '14px', justifyContent: 'center' }}>
                           {route.letter}
                         </span>
                         <strong style={{ fontSize: '15px', color: 'var(--text)' }}>{route.name}</strong>
@@ -514,14 +514,14 @@ function SoloGameComponent() {
               <h4 style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text)', marginBottom: '12px' }}>Phân bổ lựa chọn:</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {['A', 'B', 'C', 'D'].map(letter => {
-                  const matches = Object.values(roundStats).filter(c => c === letter).length;
+                  const matches = Object.values(roundStats).filter((c: any) => c === letter).length;
                   const total = Object.keys(roundStats).length;
                   const percent = Math.round((matches / total) * 100) || 0;
                   
                   return (
                     <div key={letter} style={{ fontSize: '12.5px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span>Lộ trình {letter} ({activeRoundData.routes.find(r => r.letter === letter)?.name}):</span>
+                        <span>Lộ trình {letter} ({activeRoundData.routes.find((r: any) => r.letter === letter)?.name}):</span>
                         <strong style={{ color: letter === 'B' ? 'var(--green)' : 'var(--text)' }}>{percent}% ({matches} người chơi)</strong>
                       </div>
                       <div style={{ height: '6px', background: 'var(--bg)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -538,7 +538,7 @@ function SoloGameComponent() {
               <h4 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text)', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>BẢNG ĐIỂM TỔNG HỢP</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {sortedLeaderboard.slice(0, 5).map(([name, score], i) => (
-                  <div key={name} style={{ display: 'flex', justify: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                  <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                     <span style={{ color: name === 'Bạn' ? 'var(--text)' : 'var(--text-muted)' }}>
                       {i + 1}. <strong>{name === 'Bạn' ? `${playerName} (Bạn)` : name}</strong>
                     </span>
@@ -855,7 +855,7 @@ function HostGameComponent() {
                       const matches = roomData.players.filter((p: any) => p.choice === letter).length;
                       const total = roomData.players.length || 1;
                       const percent = Math.round((matches / total) * 100);
-                      const route = activeRoundData.routes.find(r => r.letter === letter);
+                      const route = activeRoundData.routes.find((r: any) => r.letter === letter);
 
                       return (
                         <div key={letter} style={{ fontSize: '13.5px' }}>
@@ -876,7 +876,7 @@ function HostGameComponent() {
                 <div className="animate-scale-in" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '16px', padding: '24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
                     <Sparkles style={{ color: 'var(--green)' }} />
-                    <h4 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)', margin: 0 }}>AI Khuyên Dùng: Lộ trình B ({activeRoundData.routes.find(r => r.letter === 'B')?.name})</h4>
+                    <h4 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)', margin: 0 }}>AI Khuyên Dùng: Lộ trình B ({activeRoundData.routes.find((r: any) => r.letter === 'B')?.name})</h4>
                   </div>
                   <p style={{ fontSize: '14.5px', lineHeight: '1.6', color: 'var(--text-muted)', marginBottom: '24px' }}>
                     {activeRoundData.aiExplanation}
@@ -1192,7 +1192,7 @@ function PlayerGameComponent({ playerId }: { playerId: string }) {
 
           {/* 4 buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {activeRoundData.routes.map(r => {
+            {activeRoundData.routes.map((r: any) => {
               const isSelected = playerChoice === r.letter;
               const isActive = isSelectionWindowActive;
 

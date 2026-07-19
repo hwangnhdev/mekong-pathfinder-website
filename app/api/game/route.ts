@@ -28,8 +28,12 @@ const rooms: Map<string, Room> = (global as any).gameRooms || new Map();
 function getLocalIpAddress() {
   const nets = os.networkInterfaces();
   for (const name of Object.keys(nets)) {
-    for (const net of nets[name] || []) {
-      const familyV4 = typeof net.family === 'string' ? net.family === 'IPv4' : net.family === 4;
+    const interfaces = nets[name];
+    if (!interfaces) continue;
+    for (const net of interfaces) {
+      const familyV4 = typeof (net as any).family === 'string' 
+        ? (net as any).family === 'IPv4' 
+        : (net as any).family === 4;
       if (familyV4 && !net.internal) {
         return net.address;
       }
