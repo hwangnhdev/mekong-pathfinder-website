@@ -30,17 +30,24 @@ export default function HostMap({ players }: HostMapProps) {
 
     mapRef.current = map;
 
+    let timerId: any = null;
+
     // Fit camera bounds to show from Start to End
     const start = ROUND_1_GRAPH.nodes[ROUND_1_GRAPH.startingNodeId];
     const end = ROUND_1_GRAPH.nodes[ROUND_1_GRAPH.destinationNodeId];
     if (start && end) {
-      setTimeout(() => {
-        map.invalidateSize();
-        const bounds = L.latLngBounds(
-          [start.lat, start.lng],
-          [end.lat, end.lng]
-        ).pad(0.15);
-        map.fitBounds(bounds);
+      timerId = setTimeout(() => {
+        if (!mapRef.current) return;
+        try {
+          map.invalidateSize();
+          const bounds = L.latLngBounds(
+            [start.lat, start.lng],
+            [end.lat, end.lng]
+          ).pad(0.15);
+          map.fitBounds(bounds);
+        } catch (e) {
+          console.error('Error fitting bounds:', e);
+        }
       }, 500);
 
       // Start node custom marker
@@ -92,6 +99,9 @@ export default function HostMap({ players }: HostMapProps) {
     });
 
     return () => {
+      if (timerId) {
+        clearTimeout(timerId);
+      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;

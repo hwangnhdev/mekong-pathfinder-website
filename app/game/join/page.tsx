@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {
-  Play, Users, CheckCircle2, AlertTriangle, Clock, Award, MapPin, Sparkles
+  Play, Users, CheckCircle2, AlertTriangle, Clock, Award, MapPin, Sparkles, Loader2
 } from 'lucide-react';
 import logo04 from '../../../assets/images/logo_header/logo-04.png';
 import { ROUND_1_GRAPH } from '../gameData';
@@ -313,6 +313,35 @@ function PlayerJoinPageInner() {
           </div>
         )}
 
+        {/* Case 4: Intro phase (waiting for player to look at projector) */}
+        {joined && roomData?.status === 'intro' && me && (
+          <div className="join-card intro" style={{ maxWidth: '440px', textAlign: 'center', padding: '30px 20px' }}>
+            <Award size={48} style={{ color: 'var(--primary)', margin: '0 auto 15px', display: 'block', animation: 'bounce 2s infinite' }} />
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Theo dõi Bối cảnh Trận đấu</h2>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '20px' }}>
+              Bối cảnh câu chuyện, luật chơi, gợi ý từ AI trợ lý và bản đồ đang được chiếu trên màn hình projector lớn. Hãy nhìn lên để chuẩn bị cho cuộc đua nhé!
+            </p>
+            <div style={{ padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+              <div className="join-pulse-text" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>Trận đấu sắp bắt đầu...</div>
+            </div>
+          </div>
+        )}
+
+        {/* Case 5: Loading / Result analysis phase */}
+        {joined && roomData?.status === 'loading' && me && (
+          <div className="join-card loading" style={{ maxWidth: '440px', textAlign: 'center', padding: '30px 20px' }}>
+            <Loader2 className="animate-spin text-primary" size={48} style={{ color: 'var(--primary)', margin: '0 auto 15px', display: 'block' }} />
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>AI Đang Phân Tích Kết Quả</h2>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '20px' }}>
+              Đang mô phỏng lộ trình di chuyển tránh ngập lụt của bạn và các người chơi khác. Kết quả sắp được hiển thị!
+            </p>
+            <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: '60%', background: 'var(--primary)', borderRadius: '2px', animation: 'pulse 1.5s infinite' }} />
+            </div>
+          </div>
+        )}
+
+        {/* Case 6: In progress gameplay */}
         {joined && roomData?.status === 'in_progress' && currentNode && (
           <div className="join-gameplay" style={{ padding: '0 4px' }}>
             <div className="join-round-bar" style={{ marginBottom: 10 }}>

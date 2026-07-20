@@ -34,9 +34,46 @@ export default function AdminDashboardPage() {
   const [countdown, setCountdown] = useState(45);
   const [showResults, setShowResults] = useState(false);
   const [publicUrl, setPublicUrl] = useState('');
+  const [gameHistory, setGameHistory] = useState<Record<string, Record<string, number[]>>>({});
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch('/api/game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_history' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGameHistory(data.history || {});
+      }
+    } catch (e) {
+      console.error("Error fetching history:", e);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử điểm số tích lũy? Hành động này không thể hoàn tác.')) return;
+    try {
+      const res = await fetch('/api/game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear_history' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGameHistory({});
+        if (roomData) {
+          setRoomData({ ...roomData, overallScores: {} });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -91,6 +128,12 @@ export default function AdminDashboardPage() {
     pollRef.current = setInterval(fetchStatus, 1500);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [roomCode]);
+
+  useEffect(() => {
+    if (activeTab === 'game') {
+      fetchHistory();
+    }
+  }, [activeTab, roomData?.status]);
 
   const updateLinks = (code: string, currentPublicUrl: string) => {
     if (!code) return;
@@ -214,7 +257,7 @@ export default function AdminDashboardPage() {
       <main className="admin-main">
         {/* ── GAME CENTER TAB ── */}
         {activeTab === 'game' && (
-          <div className="admin-content">
+          <div className="admin-content" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
             <div className="admin-content-header">
               <div>
                 <h1>Game Center</h1>
@@ -222,17 +265,18 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {!roomCode ? (
-              /* No active room — show create button */
-              <div className="admin-empty-state">
-                <Gamepad2 size={56} strokeWidth={1.2} />
-                <h3>Chưa có phòng chơi nào</h3>
-                <p>Tạo một phòng mới để bắt đầu trận đấu trắc nghiệm tránh ngập cho khách tham quan.</p>
-                <button className="admin-btn primary" onClick={handleCreateRoom}>
-                  <Plus size={16} /> Tạo Phòng chơi mới
-                </button>
-              </div>
-            ) : (
+            <div style={{ flex: 1 }}>
+              {!roomCode ? (
+                /* No active room — show create button */
+                <div className="admin-empty-state">
+                  <Gamepad2 size={56} strokeWidth={1.2} />
+                  <h3>Chưa có phòng chơi nào</h3>
+                  <p>Tạo một phòng mới để bắt đầu trận đấu trắc nghiệm tránh ngập cho khách tham quan.</p>
+                  <button className="admin-btn primary" onClick={handleCreateRoom}>
+                    <Plus size={16} /> Tạo Phòng chơi mới
+                  </button>
+                </div>
+              ) : (
               /* Active room — show controls */
               <div className="admin-game-panel">
                 {/* Room Info Bar */}
@@ -244,7 +288,9 @@ export default function AdminDashboardPage() {
                   <div className="admin-room-status">
                     <span className={`status-badge ${roomData?.status || 'waiting'}`}>
                       {roomData?.status === 'waiting' && '⏳ Đang chờ'}
+                      {roomData?.status === 'intro' && '🎬 Giới thiệu'}
                       {roomData?.status === 'in_progress' && '🟢 Đang chơi'}
+                      {roomData?.status === 'loading' && '⚙️ Phân tích'}
                       {roomData?.status === 'finished' && '🏁 Kết thúc'}
                     </span>
                     <span className="player-count">
@@ -319,6 +365,34 @@ export default function AdminDashboardPage() {
                             style={{ flex: 1, background: '#f59e0b', color: '#fff', border: 'none' }}
                           >
                             <Play size={18} /> Vào trận (Dev Mode)
+                          </button>
+                        </div>
+                      )}
+
+                      {roomData?.status === 'intro' && (
+                        <div style={{ padding: '15px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
+                          <h4 style={{ margin: '0 0 8px 0', color: '#60a5fa', fontWeight: 'bold' }}>🎬 Đang chiếu giới thiệu bối cảnh</h4>
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>Người chơi đang theo dõi bối cảnh và hướng dẫn trên màn hình chiếu.</p>
+                          <button
+                            className="admin-btn primary large"
+                            onClick={() => gameAction('start_gameplay')}
+                            style={{ width: '100%' }}
+                          >
+                            Bắt đầu chơi ngay ➔
+                          </button>
+                        </div>
+                      )}
+
+                      {roomData?.status === 'loading' && (
+                        <div style={{ padding: '15px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
+                          <h4 style={{ margin: '0 0 8px 0', color: '#34d399', fontWeight: 'bold' }}>⚙️ Đang phân tích kết quả bằng AI</h4>
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>Màn hình đang hiển thị fake loading phân tích kết quả.</p>
+                          <button
+                            className="admin-btn success large"
+                            onClick={() => gameAction('end')}
+                            style={{ width: '100%' }}
+                          >
+                            Xem kết quả ngay 🏁
                           </button>
                         </div>
                       )}
@@ -442,6 +516,88 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             )}
+            </div>
+
+            {/* 📜 HISTORICAL LEADERBOARD SECTION */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              padding: '24px',
+              boxShadow: 'var(--shadow)',
+              marginTop: '10px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 'bold' }}>
+                  📜 Lịch sử điểm số tích lũy các phòng chơi
+                </h3>
+                {Object.keys(gameHistory).length > 0 && (
+                  <button
+                    onClick={handleClearHistory}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      color: '#ef4444',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Xóa tất cả lịch sử
+                  </button>
+                )}
+              </div>
+
+              {Object.keys(gameHistory).length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'center', padding: '30px 10px' }}>
+                  Chưa có lịch sử chơi game nào được ghi nhận.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  {Object.entries(gameHistory).map(([code, scores]) => {
+                    const sortedScores = Object.entries(scores).map(([name, scArray]) => {
+                      const arr = Array.isArray(scArray) ? scArray : [scArray];
+                      const total = arr.reduce((acc, val) => acc + (Number(val) || 0), 0);
+                      return { name, total, history: arr };
+                    }).sort((a, b) => b.total - a.total);
+
+                    return (
+                      <div key={code} style={{
+                        background: 'var(--bg-layer-1)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--primary)' }}>Phòng: {code}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
+                            {sortedScores.length} người chơi
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                          {sortedScores.map((p, idx) => (
+                            <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '4px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontWeight: '600', color: idx < 3 ? 'var(--primary)' : 'var(--text)' }}>#{idx + 1} {p.name}</span>
+                                <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                                  {p.history.map((h, i) => `L${i + 1}: ${h}đ`).join(', ')}
+                                </span>
+                              </div>
+                              <span style={{ fontWeight: 'bold' }}>{p.total} đ</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

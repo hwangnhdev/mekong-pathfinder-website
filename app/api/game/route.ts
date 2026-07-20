@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import os from 'os';
+import fs from 'fs';
+import path from 'path';
 import { ROUND_1_GRAPH } from '../../game/gameData';
 
 interface Player {
@@ -14,16 +16,39 @@ interface Player {
 
 interface Room {
   code: string;
-  status: 'waiting' | 'in_progress' | 'finished';
+  status: 'waiting' | 'intro' | 'in_progress' | 'loading' | 'finished';
   currentRound: 1 | 2;
   currentStep: number; // 1, 2, 3...
   stepStartedAt?: number;
   players: Player[];
+  overallScores?: Record<string, number[]>;
 }
 
 // In-memory rooms cache
 const rooms: Map<string, Room> = (global as any).gameRooms || new Map();
 (global as any).gameRooms = rooms;
+
+const HISTORY_FILE = path.join(process.cwd(), 'game_history.json');
+
+function loadHistoryFile(): Record<string, Record<string, number[]>> {
+  try {
+    if (fs.existsSync(HISTORY_FILE)) {
+      const data = fs.readFileSync(HISTORY_FILE, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.error("Error reading history file:", e);
+  }
+  return {};
+}
+
+function saveHistoryFile(history: Record<string, Record<string, number[]>>) {
+  try {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8');
+  } catch (e) {
+    console.error("Error writing history file:", e);
+  }
+}
 
 function getLocalIpAddress() {
   const nets = os.networkInterfaces();
@@ -115,12 +140,18 @@ export async function POST(req: Request) {
       const room = rooms.get(roomCode?.toUpperCase());
       if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
 
-      room.status = 'in_progress';
+      room.status = 'intro';
       room.currentRound = 1;
       room.currentStep = 1;
       room.stepStartedAt = Date.now();
       (room as any).isDevMode = !!isDevMode;
       
+      // Initialize overall scores map if not exists
+      if (!room.overallScores) {
+        const history = loadHistoryFile();
+        room.overallScores = history[room.code] || {};
+      }
+
       const startNode = ROUND_1_GRAPH.startingNodeId;
       room.players.forEach(p => {
         p.score = 0;
@@ -129,6 +160,28 @@ export async function POST(req: Request) {
         p.currentChoice = null;
         p.timeTaken = 0;
       });
+      return NextResponse.json({ success: true, room, serverTime: Date.now() });
+    }
+
+    if (action === 'start_gameplay') {
+      const { roomCode } = body;
+      const room = rooms.get(roomCode?.toUpperCase());
+      if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
+
+      room.status = 'in_progress';
+      room.currentStep = 1;
+      room.stepStartedAt = Date.now();
+      
+      // Reset active gameplay status for players just in case
+      const startNode = ROUND_1_GRAPH.startingNodeId;
+      room.players.forEach(p => {
+        p.score = 0;
+        p.currentNodeId = startNode;
+        p.pathHistory = [];
+        p.currentChoice = null;
+        p.timeTaken = 0;
+      });
+
       return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
@@ -186,7 +239,24 @@ export async function POST(req: Request) {
       });
 
       if (room.currentStep >= maxSteps) {
-        room.status = 'finished';
+        // Accumulate overall scores as array of numbers
+        if (!room.overallScores) {
+          room.overallScores = {};
+        }
+        room.players.forEach(p => {
+          if (!room.overallScores![p.name]) {
+            room.overallScores![p.name] = [];
+          }
+          room.overallScores![p.name].push(p.score);
+        });
+
+        // Save to file
+        const history = loadHistoryFile();
+        history[room.code] = room.overallScores;
+        saveHistoryFile(history);
+
+        room.status = 'loading';
+        room.stepStartedAt = Date.now();
       } else {
         room.currentStep += 1;
         room.stepStartedAt = Date.now();
@@ -242,6 +312,19 @@ export async function POST(req: Request) {
       room.currentStep = 1;
       room.players = [];
       return NextResponse.json({ success: true, room });
+    }
+
+    if (action === 'get_history') {
+      const history = loadHistoryFile();
+      return NextResponse.json({ success: true, history });
+    }
+
+    if (action === 'clear_history') {
+      saveHistoryFile({});
+      rooms.forEach(r => {
+        r.overallScores = {};
+      });
+      return NextResponse.json({ success: true, history: {} });
     }
 
     return NextResponse.json({ success: false, error: 'Hành động không hợp lệ!' });

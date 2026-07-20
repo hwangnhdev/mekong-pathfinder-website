@@ -5,7 +5,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {
   Trophy, Users, CheckCircle2, AlertTriangle,
-  Clock, Award, Sparkles
+  Clock, Award, Sparkles, Loader2
 } from 'lucide-react';
 import logo04 from '../../../assets/images/logo_header/logo-04.png';
 import logo15 from '../../../assets/images/logo_header/logo-14.png';
@@ -58,6 +58,10 @@ function HostProjectorPageInner() {
   const [transitionCountdown, setTransitionCountdown] = useState(5);
   const isTransitioningRef = useRef(false);
   const serverTimeOffsetRef = useRef<number>(0);
+
+  const [introCountdown, setIntroCountdown] = useState(15);
+  const [loadingCountdown, setLoadingCountdown] = useState(5);
+  const [leaderboardTab, setLeaderboardTab] = useState<'round' | 'overall'>('round');
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -115,6 +119,48 @@ function HostProjectorPageInner() {
     pollRef.current = setInterval(fetchStatus, 1500);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [roomCode]);
+
+  useEffect(() => {
+    if (!roomData) return;
+
+    if (roomData.status === 'intro' && roomData.stepStartedAt) {
+      const serverNow = Date.now() + serverTimeOffsetRef.current;
+      const elapsed = Math.floor((serverNow - roomData.stepStartedAt) / 1000);
+      const remaining = Math.max(15 - elapsed, 0);
+      setIntroCountdown(remaining);
+
+      const interval = setInterval(() => {
+        const now = Date.now() + serverTimeOffsetRef.current;
+        const el = Math.floor((now - roomData.stepStartedAt!) / 1000);
+        const rem = Math.max(15 - el, 0);
+        setIntroCountdown(rem);
+        if (rem <= 0) {
+          clearInterval(interval);
+          controlGame('start_gameplay');
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+
+    if (roomData.status === 'loading' && roomData.stepStartedAt) {
+      const serverNow = Date.now() + serverTimeOffsetRef.current;
+      const elapsed = Math.floor((serverNow - roomData.stepStartedAt) / 1000);
+      const remaining = Math.max(5 - elapsed, 0);
+      setLoadingCountdown(remaining);
+
+      const interval = setInterval(() => {
+        const now = Date.now() + serverTimeOffsetRef.current;
+        const el = Math.floor((now - roomData.stepStartedAt!) / 1000);
+        const rem = Math.max(5 - el, 0);
+        setLoadingCountdown(rem);
+        if (rem <= 0) {
+          clearInterval(interval);
+          controlGame('end');
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [roomData?.status, roomData?.stepStartedAt]);
 
   const controlGame = async (action: string) => {
     try {
@@ -266,7 +312,12 @@ function HostProjectorPageInner() {
           <header className="host-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 30px', background: 'rgba(15, 23, 42, 0.8)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <Image src={logo04} alt="Mekong Pathfinder" height={28} style={{ width: 'auto' }} priority />
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px', fontWeight: 'bold' }}>Bước {roomData.currentStep} / {ROUND_1_GRAPH.totalSteps}</span>
+              <span style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                {roomData.status === 'intro' && '🎬 Giới thiệu'}
+                {roomData.status === 'loading' && '⚙️ Phân tích kết quả'}
+                {roomData.status === 'finished' && '🏆 Kết quả'}
+                {roomData.status === 'in_progress' && `Bước ${roomData.currentStep} / ${ROUND_1_GRAPH.totalSteps}`}
+              </span>
               <span className="host-room-badge" style={{ margin: 0 }}>Phòng: {roomCode}</span>
             </div>
           </header>
@@ -365,6 +416,139 @@ function HostProjectorPageInner() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── INTRO / STORY SCENE ── */}
+        {roomData?.status === 'intro' && (
+          <div className="admin-game-panel" style={{ width: '100%', maxWidth: '1000px', margin: 'auto', textAlign: 'left', padding: '30px 40px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+              <span style={{ color: 'var(--primary)', fontWeight: '800', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.25em', display: 'block', marginBottom: '8px' }}>
+                Mekong Pathfinder
+              </span>
+              <h1 style={{ fontSize: '34px', fontWeight: '950', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>
+                BỐI CẢNH CUỘC ĐUA TRÁNH NGẬP LỤT
+              </h1>
+              <div style={{ height: '4px', width: '80px', background: 'var(--primary)', margin: '15px auto', borderRadius: '2px' }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '30px', alignItems: 'start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', padding: '20px', lineHeight: '1.6' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
+                    🌊 Tình huống khẩn cấp
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', margin: 0 }}>
+                    Cần Thơ đang hứng chịu đợt triều cường kết hợp mưa lớn cực đoan. Nước dâng nhanh gây ngập lụt cục bộ trên diện rộng, đe dọa các tuyến đường di chuyển từ <strong>Đại học FPT Cần Thơ</strong> về <strong>Bến Ninh Kiều</strong>.
+                  </p>
+                </div>
+
+                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '12px', padding: '20px', lineHeight: '1.6' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: '#34d399', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}>
+                    💡 Gợi ý di chuyển từ AI trợ lý
+                  </h3>
+                  <ul style={{ color: 'var(--text-muted)', fontSize: '13.5px', margin: 0, paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <li><strong>Ưu tiên tuyến đường cao ráo:</strong> Xem kỹ rủi ro (An toàn, Ngập vừa, Ngập sâu) trước khi đưa ra quyết định.</li>
+                    <li><strong>Điểm phạt ngập lụt:</strong> Chọn nhầm đường ngập nặng sẽ bị trừ điểm rất lớn (-30đ) và làm chậm thời gian di chuyển.</li>
+                    <li><strong>Tốc độ là chìa khóa:</strong> Lựa chọn nhanh trong 2 giây đầu sẽ nhận thêm điểm thưởng tốc độ rất lớn!</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', justifyContent: 'space-between' }}>
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: 'var(--text)', fontSize: '16px', fontWeight: 'bold' }}>
+                    🎮 Hướng dẫn điều khiển
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', lineHeight: '1.5', margin: 0 }}>
+                    Tại mỗi giao lộ, bạn chỉ có <strong>15 giây</strong> để chọn ngã rẽ A, B hoặc C trên màn hình điện thoại của mình. Hãy chú ý lắng nghe và nhìn lên màn hình chiếu này để xem các tuyến đường xung quanh!
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', background: 'rgba(15, 23, 42, 0.3)', borderRadius: '12px', border: '1px dashed var(--border)' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    Trận đấu sẽ bắt đầu sau
+                  </div>
+                  <div style={{ fontSize: '48px', fontWeight: '900', color: 'var(--primary)', animation: 'pulse 1s infinite', fontFamily: 'monospace' }}>
+                    {introCountdown}s
+                  </div>
+                  <button
+                    onClick={() => controlGame('start_gameplay')}
+                    style={{
+                      marginTop: '15px',
+                      padding: '10px 24px',
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'transform 0.2s'
+                    }}
+                  >
+                    Bắt đầu chơi ngay ➔
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── FAKE LOADING SCENE ── */}
+        {roomData?.status === 'loading' && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', padding: '40px' }}>
+            <div style={{
+              position: 'relative',
+              width: '100px',
+              height: '100px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '30px'
+            }}>
+              <Loader2 className="animate-spin text-primary" size={50} style={{ color: 'var(--primary)' }} />
+            </div>
+
+            <h2 style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '-0.02em', textTransform: 'uppercase', marginBottom: '10px' }}>
+              ĐANG PHÂN TÍCH KẾT QUẢ BẰNG AI
+            </h2>
+            <p style={{ fontSize: '16px', color: 'var(--text-muted)', maxWidth: '500px', textAlign: 'center', lineHeight: '1.6', marginBottom: '30px' }}>
+              Trình phân tích Mekong Pathfinder AI đang mô phỏng đường đi, tính toán chỉ số phơi nhiễm ngập lụt và tổng hợp bảng xếp hạng chung cuộc...
+            </p>
+
+            <div style={{ width: '300px', height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden', marginBottom: '15px' }}>
+              <div style={{
+                height: '100%',
+                width: `${((5 - loadingCountdown) / 5) * 100}%`,
+                background: 'var(--primary)',
+                transition: 'width 1s linear'
+              }} />
+            </div>
+
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Xem kết quả sau {loadingCountdown} giây...
+            </span>
+
+            <button
+              onClick={() => controlGame('end')}
+              style={{
+                marginTop: '25px',
+                padding: '8px 20px',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12.5px',
+                fontWeight: '600'
+              }}
+            >
+              Bỏ qua & Xem kết quả ➔
+            </button>
           </div>
         )}
 
@@ -497,34 +681,149 @@ function HostProjectorPageInner() {
 
         {/* ── FINISHED ── */}
         {roomData?.status === 'finished' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-            <Award size={64} color="var(--primary)" style={{ marginBottom: '20px' }} />
-            <h1 style={{ fontSize: '48px', marginBottom: '40px' }}>KẾT QUẢ CHUNG CUỘC</h1>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
-              {/* Podium */}
-              {sortedPlayers[1] && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{sortedPlayers[1].name}</div>
-                  <div style={{ background: '#c0c0c0', width: '120px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>2</div>
-                  <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[1].score} điểm</div>
-                </div>
-              )}
-              {sortedPlayers[0] && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px', color: '#fbbf24' }}>{sortedPlayers[0].name}</div>
-                  <div style={{ background: '#fbbf24', width: '140px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>1</div>
-                  <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[0].score} điểm</div>
-                </div>
-              )}
-              {sortedPlayers[2] && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{sortedPlayers[2].name}</div>
-                  <div style={{ background: '#cd7f32', width: '120px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0' }}>3</div>
-                  <div style={{ marginTop: '10px', fontWeight: 'bold' }}>{sortedPlayers[2].score} điểm</div>
-                </div>
-              )}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 40px', overflowY: 'auto', width: '100%' }}>
+            <Award size={48} color="var(--primary)" style={{ marginBottom: '15px' }} />
+            <h1 style={{ fontSize: '38px', fontWeight: '950', marginBottom: '25px', textTransform: 'uppercase' }}>
+              BẢNG XẾP HẠNG CUỘC ĐUA
+            </h1>
+
+            {/* TAB SELECTOR */}
+            <div style={{
+              display: 'flex',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              padding: '4px',
+              borderRadius: '8px',
+              marginBottom: '30px',
+              width: '100%',
+              maxWidth: '500px'
+            }}>
+              <button
+                onClick={() => setLeaderboardTab('round')}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: leaderboardTab === 'round' ? 'var(--primary)' : 'transparent',
+                  color: leaderboardTab === 'round' ? '#fff' : 'var(--text-muted)',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '14.5px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Vòng Đấu Này
+              </button>
+              <button
+                onClick={() => setLeaderboardTab('overall')}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: leaderboardTab === 'overall' ? 'var(--primary)' : 'transparent',
+                  color: leaderboardTab === 'overall' ? '#fff' : 'var(--text-muted)',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '14.5px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Chung Cuộc (Tích Lũy)
+              </button>
             </div>
-            
+
+            {/* LEADERBOARD DATA RENDERING */}
+            {(() => {
+              const activeList = leaderboardTab === 'round' 
+                ? sortedPlayers.map(p => ({ name: p.name, score: p.score, historyText: '' }))
+                : Object.entries(roomData.overallScores || {}).map(([name, scores]) => {
+                    const scoresArray = Array.isArray(scores) ? scores : [scores];
+                    const sum = scoresArray.reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
+                    return {
+                      name,
+                      score: sum,
+                      historyText: scoresArray.map((s, idx) => `Lượt ${idx + 1}: ${s}đ`).join(', ')
+                    };
+                  }).sort((a, b) => b.score - a.score);
+
+              return (
+                <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                  {/* Podium */}
+                  {activeList.length > 0 && (
+                    <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-end', justifyContent: 'center', padding: '20px 0' }}>
+                      {/* 2nd Place */}
+                      {activeList[1] && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{activeList[1].name}</div>
+                          <div style={{ background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', width: '110px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '900', color: '#fff', borderRadius: '12px 12px 0 0', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>2</div>
+                          <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '14.5px', color: '#cbd5e1' }}>{activeList[1].score} điểm</div>
+                          {activeList[1].historyText && (
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeList[1].historyText}>{activeList[1].historyText}</div>
+                          )}
+                        </div>
+                      )}
+                      {/* 1st Place */}
+                      {activeList[0] && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ fontSize: '22px', fontWeight: '900', marginBottom: '8px', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            👑 {activeList[0].name}
+                          </div>
+                          <div style={{ background: 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)', width: '130px', height: '170px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0', boxShadow: '0 10px 32px rgba(251,191,36,0.3)' }}>1</div>
+                          <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '16.5px', color: '#fbbf24' }}>{activeList[0].score} điểm</div>
+                          {activeList[0].historyText && (
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center', maxWidth: '140px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeList[0].historyText}>{activeList[0].historyText}</div>
+                          )}
+                        </div>
+                      )}
+                      {/* 3rd Place */}
+                      {activeList[2] && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{activeList[2].name}</div>
+                          <div style={{ background: 'linear-gradient(180deg, #b45309 0%, #78350f 100%)', width: '110px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '900', color: '#fff', borderRadius: '12px 12px 0 0', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>3</div>
+                          <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '14.5px', color: '#a16207' }}>{activeList[2].score} điểm</div>
+                          {activeList[2].historyText && (
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeList[2].historyText}>{activeList[2].historyText}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Rest of the list */}
+                  {activeList.length > 3 && (
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {activeList.slice(3).map((item, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: 'rgba(255,255,255,0.02)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255,255,255,0.03)'
+                        }}>
+                          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 'bold', color: 'var(--text-muted)', width: '24px' }}>#{idx + 4}</span>
+                            <div>
+                              <span style={{ fontWeight: 'bold' }}>{item.name}</span>
+                              {item.historyText && (
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  {item.historyText}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{item.score} đ</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <button
               onClick={() => controlGame('prev_step')}
               style={{

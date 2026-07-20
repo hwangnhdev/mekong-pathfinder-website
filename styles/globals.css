@@ -6192,3 +6192,12 @@ footer {
   background: transparent !important;
   border: none !important;
 }
+
+/* Fix direct icons centering inside placeholders and final screens */
+.admin-empty-state > svg,
+.admin-placeholder-panel > svg,
+.admin-finished-panel > svg,
+.join-card > svg {
+  display: block;
+  margin: 0 auto;
+}
