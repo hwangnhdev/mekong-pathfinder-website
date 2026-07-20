@@ -80,6 +80,8 @@ function PlayerJoinPageInner() {
     };
   }, []);
 
+  const failureCountRef = useRef(0);
+
   // Poll room status after joining
   useEffect(() => {
     if (!joined || !roomCode) return;
@@ -95,6 +97,7 @@ function PlayerJoinPageInner() {
         });
         const data = await res.json();
         if (data.success) {
+          failureCountRef.current = 0;
           const room = data.room;
           if (data.serverTime) {
             serverTimeOffsetRef.current = data.serverTime - Date.now();
@@ -106,12 +109,25 @@ function PlayerJoinPageInner() {
           prevStepRef.current = room.currentStep;
           setRoomData(room);
         } else {
-          // Reset status if room is no longer active on the server
+          // Check if the error is specifically that the room does not exist
+          if (data.error === 'Không tìm thấy phòng!') {
+            failureCountRef.current += 1;
+            if (failureCountRef.current >= 5) { // Allow up to 5 consecutive failures (~7.5 seconds)
+              setJoined(false);
+              setRoomData(null);
+              setErrorMsg('Phòng chơi không tồn tại hoặc đã bị đặt lại.');
+            }
+          }
+        }
+      } catch (err) {
+        // Network timeout / transient issues: increment count but do not disconnect immediately
+        failureCountRef.current += 1;
+        if (failureCountRef.current >= 15) { // Allow up to 15 network errors (~22.5 seconds)
           setJoined(false);
           setRoomData(null);
-          setErrorMsg('Phòng chơi không tồn tại hoặc đã bị đặt lại.');
+          setErrorMsg('Mất kết nối với máy chủ quá lâu.');
         }
-      } catch { }
+      }
     };
     fetchStatus();
     pollRef.current = setInterval(fetchStatus, 1500);

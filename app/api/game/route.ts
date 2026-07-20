@@ -24,8 +24,35 @@ interface Room {
   overallScores?: Record<string, number[]>;
 }
 
-// In-memory rooms cache
-const rooms: Map<string, Room> = (global as any).gameRooms || new Map();
+const ROOMS_FILE = path.join(process.cwd(), 'rooms_persist.json');
+
+function loadRoomsFile(): Map<string, Room> {
+  const map = new Map<string, Room>();
+  try {
+    if (fs.existsSync(ROOMS_FILE)) {
+      const data = fs.readFileSync(ROOMS_FILE, 'utf-8');
+      const obj = JSON.parse(data);
+      Object.entries(obj).forEach(([code, room]) => {
+        map.set(code, room as Room);
+      });
+    }
+  } catch (e) {
+    console.error("Error reading rooms file:", e);
+  }
+  return map;
+}
+
+function saveRoomsFile(roomsMap: Map<string, Room>) {
+  try {
+    const obj = Object.fromEntries(roomsMap.entries());
+    fs.writeFileSync(ROOMS_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+  } catch (e) {
+    console.error("Error writing rooms file:", e);
+  }
+}
+
+// In-memory rooms cache with file restore
+const rooms: Map<string, Room> = (global as any).gameRooms || loadRoomsFile();
 (global as any).gameRooms = rooms;
 
 const HISTORY_FILE = path.join(process.cwd(), 'game_history.json');
@@ -104,6 +131,7 @@ export async function POST(req: Request) {
         players: [],
       };
       rooms.set(code, newRoom);
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, roomCode: code, localIp: getLocalIpAddress() });
     }
 
@@ -125,6 +153,7 @@ export async function POST(req: Request) {
           timeTaken: 0,
         });
       }
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
@@ -160,6 +189,7 @@ export async function POST(req: Request) {
         p.currentChoice = null;
         p.timeTaken = 0;
       });
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
@@ -182,6 +212,7 @@ export async function POST(req: Request) {
         p.timeTaken = 0;
       });
 
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
@@ -201,6 +232,7 @@ export async function POST(req: Request) {
       player.currentChoice = edgeId;
       player.timeTaken = timeTaken;
 
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
@@ -262,6 +294,7 @@ export async function POST(req: Request) {
         room.stepStartedAt = Date.now();
       }
 
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room });
     }
 
@@ -292,6 +325,7 @@ export async function POST(req: Request) {
           p.timeTaken = 0;
         });
       }
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room, serverTime: Date.now() });
     }
 
@@ -300,6 +334,7 @@ export async function POST(req: Request) {
       const room = rooms.get(roomCode?.toUpperCase());
       if (!room) return NextResponse.json({ success: false, error: 'Không tìm thấy phòng!' });
       room.status = 'finished';
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room });
     }
 
@@ -311,6 +346,7 @@ export async function POST(req: Request) {
       room.currentRound = 1;
       room.currentStep = 1;
       room.players = [];
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, room });
     }
 
@@ -324,6 +360,7 @@ export async function POST(req: Request) {
       rooms.forEach(r => {
         r.overallScores = {};
       });
+      saveRoomsFile(rooms);
       return NextResponse.json({ success: true, history: {} });
     }
 
