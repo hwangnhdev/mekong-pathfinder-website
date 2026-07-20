@@ -265,6 +265,28 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+            {/* Vercel Warning Banner */}
+            {typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                color: '#fca5a5',
+                fontSize: '13.5px',
+                lineHeight: '1.5',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '-10px'
+              }}>
+                <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+                <div>
+                  <strong>Cảnh báo môi trường Serverless (Vercel):</strong> Bạn đang truy cập qua Vercel. Do Vercel là môi trường Serverless (tự động bật/tắt container và phân bổ tải trên nhiều server khác nhau), bộ nhớ RAM và ghi file sẽ bị xóa liên tục dẫn tới người chơi bị văng ra. Vui lòng mở trang Admin trên máy cục bộ (Localhost - ví dụ: <code>http://localhost:3000/admin</code>) và sử dụng Ngrok để có đường truyền ổn định nhất!
+                </div>
+              </div>
+            )}
+
             <div style={{ flex: 1 }}>
               {!roomCode ? (
                 /* No active room — show create button */
