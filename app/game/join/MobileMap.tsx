@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { GameNode, GameEdge, ROUND_1_GRAPH } from '../gameData';
+import { GameNode, GameEdge, ROUND_1_GRAPH, FLOOD_DATA } from '../gameData';
 
 interface MobileMapProps {
   currentNode: GameNode;
@@ -24,13 +24,29 @@ export default function MobileMap({ currentNode, availableEdges, pathHistory, pl
 
     const map = L.map(mapContainerRef.current, {
       center: [currentNode.lat, currentNode.lng],
-      zoom: 17,
+      zoom: 15,
       zoomControl: false,
       attributionControl: false
     });
 
     // Use Voyager Light theme
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+    // Render flood segments from flood.json
+    if (FLOOD_DATA && FLOOD_DATA.features) {
+      FLOOD_DATA.features.forEach((feature: any) => {
+        if (feature.geometry && feature.geometry.type === 'LineString') {
+          const latLngs = feature.geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
+          const color = feature.properties?.color || '#ef4444';
+          L.polyline(latLngs, {
+            color: color,
+            weight: 5,
+            opacity: 0.7,
+            dashArray: '5, 5'
+          }).addTo(map);
+        }
+      });
+    }
 
     mapRef.current = map;
 
@@ -47,8 +63,19 @@ export default function MobileMap({ currentNode, availableEdges, pathHistory, pl
     const map = mapRef.current;
     if (!map) return;
 
-    // Fly camera smoothly to player's current node
-    map.flyTo([currentNode.lat, currentNode.lng], 17, { animate: true, duration: 1 });
+    // Compute bounds to frame current node and upcoming choices
+    const bounds = L.latLngBounds([[currentNode.lat, currentNode.lng]]);
+    availableEdges.forEach(edge => {
+      edge.geometry.forEach(pt => {
+        bounds.extend([pt.lat, pt.lng]);
+      });
+    });
+
+    if (availableEdges.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40], animate: true, duration: 1 });
+    } else {
+      map.flyTo([currentNode.lat, currentNode.lng], 17, { animate: true, duration: 1 });
+    }
 
     // Clear old marker
     if (markerRef.current) {
@@ -134,7 +161,7 @@ export default function MobileMap({ currentNode, availableEdges, pathHistory, pl
           opacity: hasChosenAny ? (isSelected ? 1.0 : 0.2) : 0.8,
           dashArray: isSelected ? undefined : '10, 10' // Solid if selected, dotted if not
         }
-      ).addTo(map).bindPopup(edge.name);
+      ).addTo(map).bindTooltip(edge.name, { permanent: true, direction: 'center', className: 'map-edge-label' });
       
       polylinesRef.current.push(polyline);
     });
@@ -144,7 +171,7 @@ export default function MobileMap({ currentNode, availableEdges, pathHistory, pl
   return (
     <div 
       ref={mapContainerRef} 
-      style={{ height: '180px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(0,0,0,0.06)' }} 
+      style={{ height: '280px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(0,0,0,0.06)' }} 
     />
   );
 }

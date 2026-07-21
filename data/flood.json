@@ -1,0 +1,465 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.75443,
+                        10.02123
+                    ],
+                    [
+                        105.755256,
+                        10.020432
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.748253,
+                        10.026653
+                    ],
+                    [
+                        105.751054,
+                        10.023991
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.7578133,
+                        10.0469619
+                    ],
+                    [
+                        105.757075,
+                        10.044575
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.760447,
+                        10.016133
+                    ],
+                    [
+                        105.762229,
+                        10.014635
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.760335,
+                        10.016355
+                    ],
+                    [
+                        105.760775,
+                        10.016938
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.772438,
+                        10.04802
+                    ],
+                    [
+                        105.772651,
+                        10.048234
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.77264,
+                        10.050756
+                    ],
+                    [
+                        105.774562,
+                        10.048843
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nhẹ",
+                "description": "Có hiện tượng ngập nhẹ, cần chú ý khi lưu thông.",
+                "color": "#f59e0b",
+                "fillOpacity": 0.5,
+                "floodLevel": 0
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.745459,
+                        10.02407
+                    ],
+                    [
+                        105.747622,
+                        10.026192
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập nghiêm trọng",
+                "description": "Độ sâu ngập đáng báo động. Hạn chế lưu thông qua khu vực này.",
+                "color": "#ef4444",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.8
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.77379,
+                        10.051696
+                    ],
+                    [
+                        105.77939,
+                        10.046002
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.758798,
+                        10.025814
+                    ],
+                    [
+                        105.761718,
+                        10.028764
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.762316,
+                        10.014154
+                    ],
+                    [
+                        105.761949,
+                        10.013839
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.764892,
+                        10.021331
+                    ],
+                    [
+                        105.76825,
+                        10.019688
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.762621,
+                        10.014235
+                    ],
+                    [
+                        105.765401,
+                        10.011129
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.762927,
+                        10.022703
+                    ],
+                    [
+                        105.764671,
+                        10.021488
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.774579,
+                        10.032516
+                    ],
+                    [
+                        105.775736,
+                        10.030495
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.782302,
+                        10.031652
+                    ],
+                    [
+                        105.780972,
+                        10.030447
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.782871,
+                        10.033696
+                    ],
+                    [
+                        105.783623,
+                        10.033173
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.767229,
+                        10.009201
+                    ],
+                    [
+                        105.77035,
+                        10.012649
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.761848,
+                        10.033527
+                    ],
+                    [
+                        105.762416,
+                        10.032914
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Điểm ngập trung bình",
+                "description": "Mực nước ngập ở mức trung bình, nên cân nhắc tuyến đường thay thế.",
+                "color": "#f97316",
+                "fillOpacity": 0.5,
+                "floodLevel": 0.4
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        105.774390,
+                        10.032809
+                    ],
+                    [
+                        105.773483,
+                        10.034245
+                    ]
+                ]
+            }
+        }
+    ]
+}

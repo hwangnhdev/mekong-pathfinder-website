@@ -162,6 +162,38 @@ function PlayerJoinPageInner() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [roomData?.currentStep, roomData?.stepStartedAt, roomData?.status]);
 
+  // Auto-select when only 1 edge available at current node (forced path, e.g. steps 1-3)
+  useEffect(() => {
+    if (!roomData || roomData.status !== 'in_progress' || playerChoice !== null) return;
+
+    const me = roomData.players?.find((p: any) => p.id === playerId);
+    if (!me || me.currentNodeId === ROUND_1_GRAPH.destinationNodeId) return;
+
+    const available = ROUND_1_GRAPH.edges.filter((e: any) => e.from === me.currentNodeId);
+    if (available.length !== 1) return;
+
+    const timer = setTimeout(async () => {
+      const sNow = Date.now() + serverTimeOffsetRef.current;
+      const elapsed = roomData.stepStartedAt
+        ? Math.floor((sNow - roomData.stepStartedAt) / 1000)
+        : 0;
+
+      setPlayerChoice(available[0].id);
+      try {
+        await fetch('/api/game', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+          body: JSON.stringify({
+            action: 'select', roomCode, playerId,
+            edgeId: available[0].id,
+            timeTaken: Math.min(elapsed, 15),
+          }),
+        });
+      } catch { }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [roomData?.currentStep, roomData?.status, playerChoice]);
+
   const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCode || !playerName.trim()) return;
@@ -234,6 +266,7 @@ function PlayerJoinPageInner() {
 
   let currentNode = null;
   let availableEdges: any[] = [];
+  const atDestination = me?.currentNodeId === ROUND_1_GRAPH.destinationNodeId;
   if (me && roomData?.status === 'in_progress') {
     currentNode = ROUND_1_GRAPH.nodes[me.currentNodeId];
     availableEdges = ROUND_1_GRAPH.edges.filter(e => e.from === me.currentNodeId);
@@ -357,8 +390,22 @@ function PlayerJoinPageInner() {
           </div>
         )}
 
-        {/* Case 6: In progress gameplay */}
-        {joined && roomData?.status === 'in_progress' && currentNode && (
+        {/* Case 6a: Player already at destination */}
+        {joined && roomData?.status === 'in_progress' && atDestination && me && (
+          <div className="join-card" style={{ textAlign: 'center', padding: '30px 20px', maxWidth: '440px' }}>
+            <CheckCircle2 size={48} style={{ color: 'var(--success)', margin: '0 auto 15px', display: 'block' }} />
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>Đã về đích! 🏁</h2>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '20px' }}>
+              Bạn đã hoàn thành lộ trình đến <strong>{ROUND_1_GRAPH.nodes[ROUND_1_GRAPH.destinationNodeId]?.name}</strong>.
+            </p>
+            <div style={{ padding: '12px', background: 'var(--primary-dim)', borderRadius: '8px', border: '1px solid var(--primary-glow)' }}>
+              <span style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold' }}>Đang chờ các người chơi khác hoàn thành...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Case 6b: In progress gameplay */}
+        {joined && roomData?.status === 'in_progress' && currentNode && !atDestination && (
           <div className="join-gameplay" style={{ padding: '0 4px' }}>
             <div className="join-round-bar" style={{ marginBottom: 10 }}>
               <div>
@@ -394,7 +441,12 @@ function PlayerJoinPageInner() {
                   </div>
                 )
               )}
-              {elapsedSeconds > 15 && playerChoice === null && (
+              {availableEdges.length === 1 && playerChoice === null && (
+                <div className="join-locked" style={{ marginBottom: 10, background: 'rgba(59,130,246,0.1)', borderColor: '#3b82f6', color: '#3b82f6' }}>
+                  <Loader2 className="animate-spin" size={16} /> Đang tự động di chuyển...
+                </div>
+              )}
+              {elapsedSeconds > 15 && playerChoice === null && availableEdges.length > 1 && (
                 <div className="join-expired" style={{ marginBottom: 10 }}>
                   <AlertTriangle size={16} /> Hết thời gian!
                 </div>
@@ -409,23 +461,22 @@ function PlayerJoinPageInner() {
                       onClick={() => isSelectionActive && handleSelectEdge(edge.id)}
                       className={`join-route-btn ${isSelected ? 'selected' : ''} ${!isSelectionActive && !isSelected ? 'disabled' : ''}`}
                       style={{ 
-                        borderLeft: `6px solid ${edge.color}`,
-                        cursor: isSelectionActive ? 'pointer' : 'default'
+                        borderLeft: `6px solid #3b82f6`,
+                        cursor: isSelectionActive ? 'pointer' : 'default',
+                        backgroundColor: isSelected ? 'var(--primary-dim)' : '#fff',
+                        color: '#000'
                       }}
                       role="button"
                       tabIndex={0}
                     >
                       <div className="join-route-top">
-                        <span className={`join-route-letter ${isSelected ? 'active' : ''}`} style={{ backgroundColor: isSelected ? edge.color : 'rgba(255,255,255,0.1)' }}>{edge.letter}</span>
-                        <strong>{edge.name}</strong>
+                        <span className={`join-route-letter ${isSelected ? 'active' : ''}`} style={{ backgroundColor: isSelected ? '#3b82f6' : 'rgba(0,0,0,0.1)', color: isSelected ? '#fff' : '#000' }}>{edge.letter}</span>
+                        <strong style={{ color: '#000' }}>{edge.name}</strong>
                       </div>
-                      <div className="join-route-tags">
-                        <span className={`risk-tag ${edge.risk}`}>
-                          {edge.risk === 'high' ? 'Ngập sâu' : edge.risk === 'medium' ? 'Ngập vừa' : 'An toàn'}
-                        </span>
-                        <span className="time-tag">⏱️ {edge.time}s</span>
+                      <div className="join-route-tags" style={{ marginTop: '12px' }}>
+                        <span className="time-tag" style={{ background: 'rgba(0,0,0,0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>🛣️ {edge.distance}m</span>
+                        <span className="time-tag" style={{ background: 'rgba(0,0,0,0.05)', color: '#000', border: '1px solid rgba(0,0,0,0.1)' }}>⏱️ {edge.time}s</span>
                       </div>
-                      <p className="join-route-desc">{edge.desc}</p>
                     </div>
                   );
                 })}

@@ -1,5 +1,10 @@
 /* ── GAME GRAPH DATA CONFIG ── */
-/* Defines the multi-turn node graph for the Flood Escape Race game */
+/* All segments, nodes and geometry sourced STRICTLY from data/data.json */
+/* NO mock or fabricated geometry — every edge maps 1:1 to a data.json segment */
+
+import solutionData from '../../data/solution.json';
+import floodData from '../../data/flood.json';
+import dataScenario from '../../data/data.json';
 
 export interface Waypoint {
   lat: number;
@@ -15,15 +20,17 @@ export interface GameNode {
 
 export interface GameEdge {
   id: string;
-  from: string; // source node ID
-  to: string; // destination node ID
-  letter: string; // A, B, C for UI buttons
-  name: string; // Display name
-  color: string; // Hex color for drawing and button (e.g. '#3b82f6')
+  from: string;
+  to: string;
+  letter: string;
+  name: string;
+  color: string;
   risk: 'none' | 'medium' | 'high';
-  time: number; // in seconds
+  time: number;        // duration in seconds
+  distance: number;    // distance in meters
   desc: string;
   geometry: Waypoint[];
+  isSolutionPath?: boolean;
 }
 
 export interface RoundGraph {
@@ -35,81 +42,139 @@ export interface RoundGraph {
   edges: GameEdge[];
 }
 
-// ── ROUND 1 GRAPH (3 Steps: Start -> Mid1 -> Mid2 -> End) ──
-export const ROUND_1_GRAPH: RoundGraph = {
-  round: 1,
-  startingNodeId: 'start',
-  destinationNodeId: 'end',
-  totalSteps: 3,
-  nodes: {
-    'start': { id: 'start', name: 'Đại học FPT Cần Thơ', lat: 10.0298, lng: 105.7706 },
-    'm1_n': { id: 'm1_n', name: 'Ngã tư Mậu Thân', lat: 10.0350, lng: 105.7760 },
-    'm1_c': { id: 'm1_c', name: 'Đường 30/4', lat: 10.0300, lng: 105.7765 },
-    'm1_s': { id: 'm1_s', name: 'Trần Hưng Đạo', lat: 10.0250, lng: 105.7750 },
-    'm2_n': { id: 'm2_n', name: 'Vòng xoay Hùng Vương', lat: 10.0360, lng: 105.7810 },
-    'm2_c': { id: 'm2_c', name: 'Đại lộ Hòa Bình', lat: 10.0310, lng: 105.7820 },
-    'm2_s': { id: 'm2_s', name: 'Công viên Lưu Hữu Phước', lat: 10.0260, lng: 105.7800 },
-    'end': { id: 'end', name: 'Bến Ninh Kiều', lat: 10.0335, lng: 105.7865 },
-  },
-  edges: [
-    // STEP 1 (Start -> Mid1)
-    {
-      id: 'e_s_n', from: 'start', to: 'm1_n', letter: 'A', name: 'Đường Mậu Thân', color: '#ef4444', risk: 'high', time: 15, desc: 'Tuyến ngắn nhưng ngập rất sâu (0.8m).',
-      geometry: [{ lat: 10.0298, lng: 105.7706 }, { lat: 10.0324, lng: 105.7733 }, { lat: 10.0350, lng: 105.7760 }]
-    },
-    {
-      id: 'e_s_c', from: 'start', to: 'm1_c', letter: 'B', name: 'Đường 30 Tháng 4', color: '#10b981', risk: 'none', time: 10, desc: 'Cao ráo, thông thoáng.',
-      geometry: [{ lat: 10.0298, lng: 105.7706 }, { lat: 10.0299, lng: 105.7735 }, { lat: 10.0300, lng: 105.7765 }]
-    },
-    {
-      id: 'e_s_s', from: 'start', to: 'm1_s', letter: 'C', name: 'Trần Hưng Đạo', color: '#f59e0b', risk: 'medium', time: 12, desc: 'Kẹt xe nhẹ do mưa.',
-      geometry: [{ lat: 10.0298, lng: 105.7706 }, { lat: 10.0274, lng: 105.7728 }, { lat: 10.0250, lng: 105.7750 }]
-    },
+export const SOLUTION_DATA = solutionData;
+export const FLOOD_DATA = floodData;
+export const DATA_SCENARIO = dataScenario;
 
-    // STEP 2 (Mid1 -> Mid2)
-    {
-      id: 'e_m1n_m2n', from: 'm1_n', to: 'm2_n', letter: 'A', name: 'Hùng Vương (Bắc)', color: '#10b981', risk: 'none', time: 9, desc: 'Đường 1 chiều, vắng xe.',
-      geometry: [{ lat: 10.0350, lng: 105.7760 }, { lat: 10.0355, lng: 105.7785 }, { lat: 10.0360, lng: 105.7810 }]
-    },
-    {
-      id: 'e_m1n_m2c', from: 'm1_n', to: 'm2_c', letter: 'B', name: 'Trần Văn Khéo', color: '#f59e0b', risk: 'medium', time: 14, desc: 'Có lô cốt công trình.',
-      geometry: [{ lat: 10.0350, lng: 105.7760 }, { lat: 10.0330, lng: 105.7790 }, { lat: 10.0310, lng: 105.7820 }]
-    },
-    {
-      id: 'e_m1c_m2n', from: 'm1_c', to: 'm2_n', letter: 'A', name: 'Lý Tự Trọng', color: '#ef4444', risk: 'high', time: 18, desc: 'Ngập nặng khu vực hồ Xáng Thổi.',
-      geometry: [{ lat: 10.0300, lng: 105.7765 }, { lat: 10.0330, lng: 105.7785 }, { lat: 10.0360, lng: 105.7810 }]
-    },
-    {
-      id: 'e_m1c_m2c', from: 'm1_c', to: 'm2_c', letter: 'B', name: 'Đại lộ Hòa Bình', color: '#10b981', risk: 'none', time: 8, desc: 'Lộ trình AI khuyên dùng, rất đẹp.',
-      geometry: [{ lat: 10.0300, lng: 105.7765 }, { lat: 10.0305, lng: 105.7790 }, { lat: 10.0310, lng: 105.7820 }]
-    },
-    {
-      id: 'e_m1c_m2s', from: 'm1_c', to: 'm2_s', letter: 'C', name: 'Ngô Quyền', color: '#10b981', risk: 'none', time: 11, desc: 'Đi vòng nhưng đường tốt.',
-      geometry: [{ lat: 10.0300, lng: 105.7765 }, { lat: 10.0280, lng: 105.7780 }, { lat: 10.0260, lng: 105.7800 }]
-    },
-    {
-      id: 'e_m1s_m2c', from: 'm1_s', to: 'm2_c', letter: 'A', name: 'Phan Đình Phùng', color: '#f59e0b', risk: 'medium', time: 13, desc: 'Ùn ứ tại ngã ba.',
-      geometry: [{ lat: 10.0250, lng: 105.7750 }, { lat: 10.0280, lng: 105.7785 }, { lat: 10.0310, lng: 105.7820 }]
-    },
-    {
-      id: 'e_m1s_m2s', from: 'm1_s', to: 'm2_s', letter: 'B', name: 'Hai Bà Trưng', color: '#10b981', risk: 'none', time: 9, desc: 'Đường dọc bờ sông, mát mẻ.',
-      geometry: [{ lat: 10.0250, lng: 105.7750 }, { lat: 10.0255, lng: 105.7775 }, { lat: 10.0260, lng: 105.7800 }]
-    },
+// ── Solution path: the optimal AI route (S1→S2→S3→S4→S5→S6) ──
+const SOLUTION_SEGMENT_IDS = new Set(['S1', 'S2', 'S3', 'S4', 'S5', 'S6']);
 
-    // STEP 3 (Mid2 -> End)
-    {
-      id: 'e_m2n_e', from: 'm2_n', to: 'end', letter: 'A', name: 'Nguyễn Thái Học', color: '#10b981', risk: 'none', time: 7, desc: 'Khá gần và an toàn.',
-      geometry: [{ lat: 10.0360, lng: 105.7810 }, { lat: 10.0347, lng: 105.7837 }, { lat: 10.0335, lng: 105.7865 }]
-    },
-    {
-      id: 'e_m2c_e', from: 'm2_c', to: 'end', letter: 'B', name: 'Đường Hai Bà Trưng (Tiếp)', color: '#10b981', risk: 'none', time: 5, desc: 'Lộ trình tối ưu nhất.',
-      geometry: [{ lat: 10.0310, lng: 105.7820 }, { lat: 10.0322, lng: 105.7842 }, { lat: 10.0335, lng: 105.7865 }]
-    },
-    {
-      id: 'e_m2s_e', from: 'm2_s', to: 'end', letter: 'C', name: 'Nguyễn Trãi', color: '#ef4444', risk: 'high', time: 16, desc: 'Đường ven chợ kẹt cứng, triều cường dâng.',
-      geometry: [{ lat: 10.0260, lng: 105.7800 }, { lat: 10.0297, lng: 105.7832 }, { lat: 10.0335, lng: 105.7865 }]
-    }
-  ]
+// ── Display metadata per segment ──
+const SEGMENT_META: Record<string, { risk: 'none' | 'medium' | 'high'; desc: string }> = {
+  S1:  { risk: 'none',   desc: 'Tuyến chuẩn AI: Đường Nguyễn Văn Cừ nối dài, mặt đường khô ráo.' },
+  S2:  { risk: 'none',   desc: 'Tuyến chuẩn AI: Đường Nguyễn Văn Cừ nối dài, hạ tầng cao ráo.' },
+  S3:  { risk: 'none',   desc: 'Tuyến chuẩn AI: Đường Nguyễn Văn Cừ nối dài đến Ngã tư NVC – NVL.' },
+  S4:  { risk: 'none',   desc: 'Tuyến chuẩn AI: Đi thẳng qua đường Mậu Thân đến Cầu Rạch Ngỗng.' },
+  S5:  { risk: 'none',   desc: 'Tuyến chuẩn AI: Qua Huỳnh Thúc Kháng – Hoàng Văn Thụ đến Cầu Ba Khía.' },
+  S6:  { risk: 'none',   desc: 'Tuyến chuẩn AI: Qua Xô Viết Nghệ Tĩnh ra Bến Ninh Kiều.' },
+  S7:  { risk: 'medium', desc: 'Đường 3/2 từ Vòng Xuyến 30/4 đến Ngã tư Mậu Thân – 3/2.' },
+  S8:  { risk: 'medium', desc: 'Đường 30/4 từ Ngã tư Mậu Thân ra Bến Ninh Kiều.' },
+  S9:  { risk: 'medium', desc: 'Đường 30/4 từ Vòng Xuyến 30/4 ra thẳng Bến Ninh Kiều.' },
+  S10: { risk: 'medium', desc: 'Đi vòng qua Nguyễn Văn Linh – Đường 3/2 đến Cầu Ba Khía, né Mậu Thân.' },
+  S11: { risk: 'high',   desc: 'Đường Mậu Thân, khu vực ngập sâu do triều cường dâng.' },
+  S12: { risk: 'medium', desc: 'Đường Hoàng Quốc Việt.' },
+  S13: { risk: 'medium', desc: 'Đường Nguyễn Văn Trường.' },
 };
 
-export const BOT_NAMES = ['AI_Thanh', 'AI_Tuan', 'AI_Mai', 'Minh_CanTho', 'Vy_NinhKieu', 'Binh_CaiRang', 'Huu_PhongDien', 'Lan_BinhThuy', 'Nam_OMon'];
+const RISK_COLORS: Record<string, string> = {
+  none:   '#3b82f6', // Uniform blue for all choices to hide hints
+  medium: '#3b82f6',
+  high:   '#3b82f6',
+};
+
+// ── Build the complete game graph from data.json ──
+function buildRoundGraph(): RoundGraph {
+  // 1. Nodes
+  const nodes: Record<string, GameNode> = {};
+  dataScenario.nodes.forEach((n: any) => {
+    nodes[n.id] = { id: n.id, name: n.name, lat: n.lat, lng: n.lng };
+  });
+
+  // 2. Group segments by source node for letter assignment
+  const edgesByFrom: Record<string, any[]> = {};
+  dataScenario.segments.forEach((seg: any) => {
+    if (!edgesByFrom[seg.from]) edgesByFrom[seg.from] = [];
+    edgesByFrom[seg.from].push(seg);
+  });
+
+  // 3. Build edges — solution-path edges always get letter 'A'
+  const edges: GameEdge[] = [];
+  const LETTERS = ['A', 'B', 'C', 'D'];
+
+  Object.values(edgesByFrom).forEach((segs) => {
+    // Sort: solution path first, then by segment ID
+    segs.sort((a: any, b: any) => {
+      const aS = SOLUTION_SEGMENT_IDS.has(a.id) ? 0 : 1;
+      const bS = SOLUTION_SEGMENT_IDS.has(b.id) ? 0 : 1;
+      if (aS !== bS) return aS - bS;
+      return a.id.localeCompare(b.id, undefined, { numeric: true });
+    });
+
+    segs.forEach((seg: any, idx: number) => {
+      const meta = SEGMENT_META[seg.id] || { risk: 'medium' as const, desc: seg.name };
+      edges.push({
+        id: seg.id,
+        from: seg.from,
+        to: seg.to,
+        letter: LETTERS[idx] || String.fromCharCode(65 + idx),
+        name: seg.name,
+        color: RISK_COLORS[meta.risk] || '#3b82f6',
+        risk: meta.risk,
+        time: Math.round((seg.duration || 60000) / 1000),
+        distance: Math.round(seg.distance || 0),
+        desc: meta.desc,
+        geometry: seg.geometry as Waypoint[],
+        isSolutionPath: SOLUTION_SEGMENT_IDS.has(seg.id),
+      });
+    });
+  });
+
+  return {
+    round: 1,
+    startingNodeId: dataScenario.start_node,
+    destinationNodeId: dataScenario.end_node,
+    totalSteps: 6,   // max possible (A→B→C→D→E→F→G)
+    nodes,
+    edges,
+  };
+}
+
+export const ROUND_1_GRAPH: RoundGraph = buildRoundGraph();
+
+// Helper to extract exact segment geometry from data.json
+export const getSegmentGeom = (segmentId: string): Waypoint[] => {
+  const seg = dataScenario.segments.find((s: any) => s.id === segmentId);
+  return seg ? seg.geometry : [];
+};
+
+export const BOT_NAMES = [
+  'AI_Thanh', 'AI_Tuan', 'AI_Mai',
+  'Minh_CanTho', 'Vy_NinhKieu', 'Binh_CaiRang',
+  'Huu_PhongDien', 'Lan_BinhThuy', 'Nam_OMon',
+];
+
+// ── SOLUTION EVALUATION HELPER ──
+export function evaluatePlayerRoute(pathHistory: string[]) {
+  let totalDistance = 0;
+  let totalTime = 0;
+  let floodPenalties = 0;
+  let score = 100;
+
+  pathHistory.forEach(edgeId => {
+    const edge = ROUND_1_GRAPH.edges.find(e => e.id === edgeId);
+    if (!edge) return;
+
+    totalDistance += edge.distance || 0;
+    totalTime += edge.time || 0;
+
+    if (edge.risk === 'high') {
+      floodPenalties += 2;
+      score -= 20; // Heavy penalty for deep flood
+    } else if (edge.risk === 'medium') {
+      floodPenalties += 1;
+      score -= 10; // Medium penalty for light flood
+    }
+    
+    // Minor penalty for non-optimal/detour paths (if it's not the solution path)
+    if (!edge.isSolutionPath) {
+      score -= 5;
+    }
+  });
+
+  return {
+    totalDistance,
+    totalTime,
+    floodPenalties,
+    score: Math.max(0, Math.min(100, Math.round(score)))
+  };
+}

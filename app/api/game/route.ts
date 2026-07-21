@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
-import { ROUND_1_GRAPH } from '../../game/gameData';
+import { ROUND_1_GRAPH, evaluatePlayerRoute } from '../../game/gameData';
 
 interface Player {
   id: string;
@@ -245,32 +245,41 @@ export async function POST(req: Request) {
 
       // Process all choices for the current step
       room.players.forEach(p => {
+        // Auto-assign if player has no choice (went AFK or ran out of time)
+        if (!p.currentChoice && p.currentNodeId !== ROUND_1_GRAPH.destinationNodeId) {
+          const available = ROUND_1_GRAPH.edges.filter(e => e.from === p.currentNodeId);
+          if (available.length > 0) {
+            // Pick a random edge so they keep moving
+            const randomEdge = available[Math.floor(Math.random() * available.length)];
+            p.currentChoice = randomEdge.id;
+          }
+        }
+
         if (p.currentChoice) {
           const chosenEdge = ROUND_1_GRAPH.edges.find(e => e.id === p.currentChoice);
           if (chosenEdge) {
             p.pathHistory.push(chosenEdge.id);
             p.currentNodeId = chosenEdge.to; // Move player to new node
-
-            // Calculate score for this step
-            let points = 50; // base score for making a move
-            if (chosenEdge.risk === 'none') points += 50;
-            if (chosenEdge.risk === 'medium') points += 20;
-            if (chosenEdge.risk === 'high') points -= 30; // penalty
-
-            // Speed bonus
-            if (p.timeTaken <= 2) points += 20;
-            else if (p.timeTaken <= 5) points += 10;
-
-            p.score += points;
           }
         }
+        
+        // Attach solution evaluation
+        const evalResult = evaluatePlayerRoute(p.pathHistory);
+        p.score = evalResult.score;
+        (p as any).totalDistance = evalResult.totalDistance;
+        (p as any).totalTime = evalResult.totalTime;
+        (p as any).floodPenalties = evalResult.floodPenalties;
         
         // Reset choice for the next turn
         p.currentChoice = null;
         p.timeTaken = 0;
       });
 
-      if (room.currentStep >= maxSteps) {
+      // End game if max steps reached OR all players at destination
+      const allAtDestination = room.players.length > 0 &&
+        room.players.every(p => p.currentNodeId === ROUND_1_GRAPH.destinationNodeId);
+
+      if (room.currentStep >= maxSteps || allAtDestination) {
         // Accumulate overall scores as array of numbers
         if (!room.overallScores) {
           room.overallScores = {};
@@ -314,12 +323,14 @@ export async function POST(req: Request) {
             const lastEdge = ROUND_1_GRAPH.edges.find(e => e.id === lastEdgeId);
             if (lastEdge) {
               p.currentNodeId = lastEdge.from;
-              let points = 50;
-              if (lastEdge.risk === 'none') points += 50;
-              if (lastEdge.risk === 'medium') points += 20;
-              if (lastEdge.risk === 'high') points -= 30;
-              p.score = Math.max(0, p.score - points);
             }
+            
+            // Re-evaluate score with the truncated pathHistory
+            const evalResult = evaluatePlayerRoute(p.pathHistory);
+            p.score = evalResult.score;
+            (p as any).totalDistance = evalResult.totalDistance;
+            (p as any).totalTime = evalResult.totalTime;
+            (p as any).floodPenalties = evalResult.floodPenalties;
           }
           p.currentChoice = null;
           p.timeTaken = 0;

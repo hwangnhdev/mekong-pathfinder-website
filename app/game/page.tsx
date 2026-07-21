@@ -10,38 +10,36 @@ import {
 } from 'lucide-react';
 
 import logo04 from '../../assets/images/logo_header/logo-04.png';
+import { BOT_NAMES } from './gameData';
 
 /* ── GAME DATA CONFIG ── */
 const ROUNDS_DATA: Record<number, any> = {
   1: {
     round: 1,
-    startingPoint: 'Đại học Cần Thơ (Khu II)',
+    startingPoint: 'Đại học FPT Cần Thơ',
     destination: 'Bến Ninh Kiều',
     duration: 45,
     routes: [
-      { letter: 'A', name: 'Đường Mậu Thân', risk: 'high', traffic: 'heavy', time: '22 phút', desc: 'Tuyến ngắn nhất nhưng ngập nặng (0.8m - 1.2m), xe máy chết máy hàng loạt.', aiRecommended: false },
-      { letter: 'B', name: 'Đường 30 Tháng 4', risk: 'none', traffic: 'moderate', time: '11 phút', desc: 'Tuyến đường nâng cấp cao ráo, hoàn toàn khô ráo và an toàn.', aiRecommended: true },
-      { letter: 'C', name: 'Đường Trần Hưng Đạo', risk: 'medium', traffic: 'heavy', time: '16 phút', desc: 'Kẹt xe kéo dài do các phương tiện dồn toa tránh ngập.', aiRecommended: false },
-      { letter: 'D', name: 'Đại lộ Hòa Bình', risk: 'none', traffic: 'heavy', time: '19 phút', desc: 'Đường không ngập nhưng kẹt cứng ngắt tại vòng xoay.', aiRecommended: false }
+      { letter: 'A', name: 'S1: Đường Nguyễn Văn Cừ nối dài (Tuyến Chuẩn AI)', risk: 'none', traffic: 'light', time: '10 phút', desc: 'Lộ trình chuẩn S1 theo kịch bản data.json từ ĐH FPT đến Cầu Rau Răm.', aiRecommended: true },
+      { letter: 'B', name: 'Tuyến Né Qua Hoàng Quốc Việt', risk: 'medium', traffic: 'moderate', time: '14 phút', desc: 'Đường hẹp, kẹt xe nhẹ tại điểm giao.', aiRecommended: false },
+      { letter: 'C', name: 'Tuyến Đầm Trũng Hưng Thạnh', risk: 'high', traffic: 'heavy', time: '18 phút', desc: 'Khu vực ngập sâu (flood.json: 0.8m), xe máy nguy cơ chết máy.', aiRecommended: false }
     ],
-    aiExplanation: 'Đường 30 Tháng 4 là tuyến duy nhất được nâng cao cốt nền giao thông, giúp bạn di chuyển an toàn, khô ráo và tiết kiệm thời gian nhất.'
+    aiExplanation: 'Lộ trình S1 -> S2 -> S3 -> S4 -> S5 -> S6 trùng khớp 100% kịch bản tối ưu (data.json), giúp di chuyển an toàn 6 bước đến Bến Ninh Kiều.'
   },
   2: {
     round: 2,
-    startingPoint: 'Chợ Cái Răng',
+    startingPoint: 'Bến Ninh Kiều',
     destination: 'Sân bay Cần Thơ',
     duration: 45,
     routes: [
-      { letter: 'A', name: 'Đường Nguyễn Văn Cừ', risk: 'high', traffic: 'heavy', time: '35 phút', desc: 'Ngập sâu (0.6m - 0.9m) tại đoạn trũng gần hồ Bún Xáng, giao thông tê liệt.', aiRecommended: false },
-      { letter: 'B', name: 'Tuyến tránh Quốc lộ 91B', risk: 'none', traffic: 'light', time: '16 phút', desc: 'Tuyến đi vòng nhưng cao ráo, thông thoáng, tối ưu nhất.', aiRecommended: true },
-      { letter: 'C', name: 'Đường Cách Mạng Tháng 8', risk: 'medium', traffic: 'moderate', time: '26 phút', desc: 'Ngập cục bộ (0.4m - 0.6m) gây hư hại động cơ xe máy.', aiRecommended: false },
-      { letter: 'D', name: 'Đường Lê Hồng Phong', risk: 'medium', traffic: 'heavy', time: '29 phút', desc: 'Ngập nhẹ, nhiều xe tải lớn di chuyển tạo sóng nước nguy hiểm.', aiRecommended: false }
+      { letter: 'A', name: 'Tuyến Tránh QL91B (Tuyến Chuẩn AI)', risk: 'none', traffic: 'light', time: '16 phút', desc: 'Lộ trình tối ưu tránh hoàn toàn các vùng ngập.', aiRecommended: true },
+      { letter: 'B', name: 'Đường Cách Mạng Tháng 8', risk: 'medium', traffic: 'moderate', time: '26 phút', desc: 'Ngập cục bộ 0.4m - 0.6m (flood.json), gây ảnh hưởng động cơ.', aiRecommended: false },
+      { letter: 'C', name: 'Đường Nguyễn Văn Cừ (Đoạn Bún Xáng)', risk: 'high', traffic: 'heavy', time: '35 phút', desc: 'Ngập nghiêm trọng 0.8m (flood.json), giao thông tê liệt hoàn toàn.', aiRecommended: false }
     ],
-    aiExplanation: 'Tuyến tránh QL 91B tuy có quãng đường dài hơn nhưng cốt đường cao và lưu lượng xe thông thoáng, giúp tránh hoàn toàn vùng rập lụt nguy hiểm.'
+    aiExplanation: 'Tuyến tránh QL 91B là đáp án chuẩn AI giúp tránh toàn bộ các đoạn ngập lụt nghiêm trọng ghi nhận trong flood.json.'
   }
 };
 
-const BOT_NAMES = ['AI_Thanh', 'AI_Tuan', 'AI_Mai', 'Minh_CanTho', 'Vy_NinhKieu', 'Binh_CaiRang', 'Huu_PhongDien', 'Lan_BinhThuy', 'Nam_OMon'];
 
 export default function GamePage() {
   const [mode, setMode] = useState<'selection' | 'solo' | 'host' | 'player'>('selection');
@@ -270,38 +268,46 @@ function SoloGameComponent() {
     const newRoundStats: Record<string, string | null> = {};
     const updatedScores = { ...scores };
 
-    // Player score
-    if (playerChoice === 'B') {
+    // Player score: Option A matches solution.json target route
+    if (playerChoice === 'A') {
       let speedBonus = 0;
       if (timeSelected <= 2) speedBonus = 30;
       else if (timeSelected <= 5) speedBonus = 20;
       else if (timeSelected <= 8) speedBonus = 10;
       updatedScores['Bạn'] += 100 + speedBonus;
+      newRoundStats['Bạn'] = 'A';
+    } else if (playerChoice === 'B') {
+      updatedScores['Bạn'] += 50;
       newRoundStats['Bạn'] = 'B';
     } else {
+      updatedScores['Bạn'] += 20;
       newRoundStats['Bạn'] = playerChoice;
     }
 
     // Bot selections
     BOT_NAMES.forEach(bot => {
       const isAIBot = bot.startsWith('AI_');
-      let botChoice = 'B';
+      let botChoice = 'A';
       if (!isAIBot) {
-        const options = ['A', 'B', 'C', 'D'];
+        const options = ['A', 'B', 'C'];
         botChoice = options[Math.floor(Math.random() * options.length)];
       } else {
-        botChoice = Math.random() < 0.9 ? 'B' : ['A', 'C', 'D'][Math.floor(Math.random() * 3)];
+        botChoice = Math.random() < 0.9 ? 'A' : ['B', 'C'][Math.floor(Math.random() * 2)];
       }
 
       newRoundStats[bot] = botChoice;
 
-      if (botChoice === 'B') {
+      if (botChoice === 'A') {
         const simulatedTime = Math.floor(Math.random() * 8) + 1;
         let speedBonus = 0;
         if (simulatedTime <= 2) speedBonus = 30;
         else if (simulatedTime <= 5) speedBonus = 20;
         else if (simulatedTime <= 8) speedBonus = 10;
         updatedScores[bot] += 100 + speedBonus;
+      } else if (botChoice === 'B') {
+        updatedScores[bot] += 50;
+      } else {
+        updatedScores[bot] += 20;
       }
     });
 

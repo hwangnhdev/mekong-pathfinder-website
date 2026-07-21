@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ROUND_1_GRAPH } from '../gameData';
+import { ROUND_1_GRAPH, FLOOD_DATA } from '../gameData';
 
 interface HostMapProps {
   players: any[];
@@ -14,13 +14,13 @@ export default function HostMap({ players }: HostMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const playerMarkersRef = useRef<Record<string, L.Marker>>({});
 
-  // 1. Initialize Map, static edges, and static nodes
+  // 1. Initialize Map, static edges, static nodes, and flood polylines
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [10.0315, 105.7785],
-      zoom: 15,
+      center: [10.025, 105.76],
+      zoom: 14,
       zoomControl: false,
       attributionControl: false
     });
@@ -31,6 +31,30 @@ export default function HostMap({ players }: HostMapProps) {
     mapRef.current = map;
 
     let timerId: any = null;
+
+    // Render flood segments from flood.json
+    if (FLOOD_DATA && FLOOD_DATA.features) {
+      FLOOD_DATA.features.forEach((feature: any) => {
+        if (feature.geometry && feature.geometry.type === 'LineString') {
+          const latLngs = feature.geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
+          const color = feature.properties?.color || '#ef4444';
+          const name = feature.properties?.name || 'Điểm ngập';
+          const desc = feature.properties?.description || 'Khu vực bị ảnh hưởng bởi triều cường/mưa lớn.';
+
+          L.polyline(latLngs, {
+            color: color,
+            weight: 7,
+            opacity: 0.75,
+            dashArray: '6, 8'
+          }).addTo(map).bindPopup(`
+            <div style="font-family: sans-serif; padding: 4px;">
+              <strong style="color: ${color}; font-size: 13px;">🌊 ${name}</strong><br/>
+              <span style="font-size: 11px; color: #475569;">${desc}</span>
+            </div>
+          `);
+        }
+      });
+    }
 
     // Fit camera bounds to show from Start to End
     const start = ROUND_1_GRAPH.nodes[ROUND_1_GRAPH.startingNodeId];
@@ -43,7 +67,7 @@ export default function HostMap({ players }: HostMapProps) {
           const bounds = L.latLngBounds(
             [start.lat, start.lng],
             [end.lat, end.lng]
-          ).pad(0.15);
+          ).pad(0.2);
           map.fitBounds(bounds);
         } catch (e) {
           console.error('Error fitting bounds:', e);
@@ -79,11 +103,11 @@ export default function HostMap({ players }: HostMapProps) {
         edge.geometry.map(pt => [pt.lat, pt.lng]),
         {
           color: edge.color,
-          weight: 4,
-          opacity: 0.4,
-          dashArray: '5, 10'
+          weight: edge.isSolutionPath ? 6 : 4,
+          opacity: edge.isSolutionPath ? 0.8 : 0.4,
+          dashArray: edge.isSolutionPath ? undefined : '5, 10'
         }
-      ).addTo(map).bindPopup(edge.name);
+      ).addTo(map).bindPopup(`<b>${edge.name}</b><br/>${edge.desc}`);
     });
 
     // Draw all intersection nodes once

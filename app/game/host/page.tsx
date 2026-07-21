@@ -12,6 +12,7 @@ import logo15 from '../../../assets/images/logo_header/logo-14.png';
 import { ROUND_1_GRAPH } from '../gameData';
 
 const HostMap = dynamic(() => import('./HostMap'), { ssr: false });
+const CompareMap = dynamic(() => import('./CompareMap'), { ssr: false });
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
   constructor(props: any) {
@@ -61,7 +62,8 @@ function HostProjectorPageInner() {
 
   const [introCountdown, setIntroCountdown] = useState(15);
   const [loadingCountdown, setLoadingCountdown] = useState(5);
-  const [leaderboardTab, setLeaderboardTab] = useState<'round' | 'overall'>('round');
+  const [leaderboardTab, setLeaderboardTab] = useState<'round' | 'overall' | 'compare'>('round');
+  const [selectedComparePlayerId, setSelectedComparePlayerId] = useState<string | null>(null);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -363,7 +365,7 @@ function HostProjectorPageInner() {
                   Luật chơi:
                 </span>
                 <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-                  • <strong>Cách chơi:</strong> Trò chơi có {ROUND_1_GRAPH.totalSteps} bước ngã rẽ. Ở mỗi ngã rẽ, bạn có 8 giây để chọn đường đi.<br />
+                  • <strong>Cách chơi:</strong> Di chuyển qua {ROUND_1_GRAPH.totalSteps} chặng đường từ ĐH FPT đến Bến Ninh Kiều. Tại các ngã rẽ, bạn có 15 giây để chọn hướng đi.<br />
                   • <strong>Tham gia:</strong> Quét mã QR để vào phòng.<br />
                   • <strong>Ghi điểm:</strong> Chọn đường ít ngập sẽ được cộng điểm, kẹt xe hoặc ngập sâu sẽ bị trừ điểm! Nhanh tay sẽ có thêm điểm tốc độ.
                 </p>
@@ -621,9 +623,10 @@ function HostProjectorPageInner() {
                       <div style={{ width: '30px', fontWeight: 'bold', color: i < 3 ? 'var(--primary)' : 'var(--text-muted)' }}>#{i + 1}</div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 'bold' }}>{p.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>📍 {node?.name}</div>
+                        <div style={{ fontSize: '12px', color: p.currentNodeId === ROUND_1_GRAPH.destinationNodeId ? 'var(--success)' : 'var(--text-muted)' }}>
+                          {p.currentNodeId === ROUND_1_GRAPH.destinationNodeId ? '✅ Đã về đích (Đang chờ...)' : `📍 ${node?.name}`}
+                        </div>
                       </div>
-                      <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>{p.score}</div>
                       {p.currentChoice && <CheckCircle2 size={16} color="var(--primary)" style={{ marginLeft: '10px' }} />}
                     </div>
                   );
@@ -732,18 +735,108 @@ function HostProjectorPageInner() {
               >
                 Chung Cuộc (Tích Lũy)
               </button>
+              <button
+                onClick={() => setLeaderboardTab('compare')}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: leaderboardTab === 'compare' ? 'var(--primary)' : 'transparent',
+                  color: leaderboardTab === 'compare' ? '#fff' : 'var(--text-muted)',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '14.5px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                So sánh Đáp Án
+              </button>
             </div>
 
             {/* LEADERBOARD DATA RENDERING */}
             {(() => {
+              if (leaderboardTab === 'compare') {
+                const solutionEdges = ROUND_1_GRAPH.edges.filter(e => e.isSolutionPath);
+                const optDist = solutionEdges.reduce((acc, e) => acc + (e.distance || 0), 0);
+                const optTime = solutionEdges.reduce((acc, e) => acc + (e.time || 0), 0);
+                const solutionEdgeIds = solutionEdges.map(e => e.id);
+                
+                const selectedPlayer = selectedComparePlayerId 
+                  ? sortedPlayers.find((p: any) => p.id === selectedComparePlayerId)
+                  : null;
+                
+                return (
+                  <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <CompareMap 
+                      optimalEdges={solutionEdgeIds} 
+                      playerEdges={selectedPlayer?.pathHistory || null} 
+                      playerName={selectedPlayer?.name || null} 
+                    />
+
+                    <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '2px solid var(--success)', borderRadius: '12px', padding: '20px' }}>
+                      <h3 style={{ margin: 0, color: 'var(--success)', marginBottom: 15, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Award size={24}/> Tuyến đường Tối Ưu (AI Đề Xuất)</h3>
+                      <div style={{ display: 'flex', gap: '30px', fontSize: '15px', color: 'var(--text)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🛣️ Quãng đường: <strong>{optDist}m</strong></span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>⏱️ Thời gian: <strong>{optTime}s</strong></span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>✅ Lỗi ngập: <strong>0</strong></span>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-muted)' }}>Bấm vào một người chơi để xem đường đi của họ trên bản đồ phía trên.</p>
+                      {sortedPlayers.map((p: any) => {
+                        const isSelected = selectedComparePlayerId === p.id;
+                        return (
+                          <div 
+                            key={p.id} 
+                            onClick={() => setSelectedComparePlayerId(isSelected ? null : p.id)}
+                            style={{ 
+                              background: isSelected ? 'var(--primary-dim)' : 'var(--bg-layer-1)', 
+                              padding: '16px 20px', 
+                              borderRadius: '8px', 
+                              border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)', 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <strong style={{ fontSize: '16px', color: isSelected ? 'var(--primary)' : 'var(--text)' }}>{p.name}</strong>
+                            <div style={{ display: 'flex', gap: '20px', fontSize: '14px', fontWeight: '500' }}>
+                              <span style={{ color: (p.totalDistance || 0) <= optDist ? 'var(--success)' : 'var(--text-muted)' }}>🛣️ {p.totalDistance || 0}m</span>
+                              <span style={{ color: (p.totalTime || 0) <= optTime ? 'var(--success)' : 'var(--text-muted)' }}>⏱️ {p.totalTime || 0}s</span>
+                              <span style={{ color: (p.floodPenalties || 0) === 0 ? 'var(--success)' : '#ef4444' }}>
+                                {p.floodPenalties > 0 ? `⚠️ ${p.floodPenalties} lỗi` : '✅ An toàn'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+
               const activeList = leaderboardTab === 'round' 
-                ? sortedPlayers.map(p => ({ name: p.name, score: p.score, historyText: '' }))
+                ? sortedPlayers.map((p: any) => ({ 
+                    name: p.name, 
+                    score: p.score, 
+                    totalDistance: p.totalDistance,
+                    totalTime: p.totalTime,
+                    floodPenalties: p.floodPenalties,
+                    historyText: '' 
+                  }))
                 : Object.entries(roomData.overallScores || {}).map(([name, scores]) => {
                     const scoresArray = Array.isArray(scores) ? scores : [scores];
                     const sum = scoresArray.reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
                     return {
                       name,
                       score: sum,
+                      totalDistance: null,
+                      totalTime: null,
+                      floodPenalties: null,
                       historyText: scoresArray.map((s, idx) => `Lượt ${idx + 1}: ${s}đ`).join(', ')
                     };
                   }).sort((a, b) => b.score - a.score);
@@ -759,6 +852,12 @@ function HostProjectorPageInner() {
                           <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{activeList[1].name}</div>
                           <div style={{ background: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)', width: '110px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '900', color: '#fff', borderRadius: '12px 12px 0 0', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>2</div>
                           <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '14.5px', color: '#cbd5e1' }}>{activeList[1].score} điểm</div>
+                          {activeList[1].totalDistance != null && (
+                            <div style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '4px', textAlign: 'center' }}>
+                              🛣️ {activeList[1].totalDistance}m ⏱️ {activeList[1].totalTime}s<br/>
+                              {activeList[1].floodPenalties > 0 ? `⚠️ ${activeList[1].floodPenalties} lỗi` : '✅ An toàn'}
+                            </div>
+                          )}
                           {activeList[1].historyText && (
                             <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeList[1].historyText}>{activeList[1].historyText}</div>
                           )}
@@ -772,6 +871,12 @@ function HostProjectorPageInner() {
                           </div>
                           <div style={{ background: 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)', width: '130px', height: '170px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px', fontWeight: '900', color: '#000', borderRadius: '12px 12px 0 0', boxShadow: '0 10px 32px rgba(251,191,36,0.3)' }}>1</div>
                           <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '16.5px', color: '#fbbf24' }}>{activeList[0].score} điểm</div>
+                          {activeList[0].totalDistance != null && (
+                            <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '4px', textAlign: 'center' }}>
+                              🛣️ {activeList[0].totalDistance}m ⏱️ {activeList[0].totalTime}s<br/>
+                              {activeList[0].floodPenalties > 0 ? `⚠️ ${activeList[0].floodPenalties} lỗi ngập` : '✅ An toàn'}
+                            </div>
+                          )}
                           {activeList[0].historyText && (
                             <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center', maxWidth: '140px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeList[0].historyText}>{activeList[0].historyText}</div>
                           )}
@@ -783,6 +888,12 @@ function HostProjectorPageInner() {
                           <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>{activeList[2].name}</div>
                           <div style={{ background: 'linear-gradient(180deg, #b45309 0%, #78350f 100%)', width: '110px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '900', color: '#fff', borderRadius: '12px 12px 0 0', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>3</div>
                           <div style={{ marginTop: '8px', fontWeight: 'bold', fontSize: '14.5px', color: '#a16207' }}>{activeList[2].score} điểm</div>
+                          {activeList[2].totalDistance != null && (
+                            <div style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '4px', textAlign: 'center' }}>
+                              🛣️ {activeList[2].totalDistance}m ⏱️ {activeList[2].totalTime}s<br/>
+                              {activeList[2].floodPenalties > 0 ? `⚠️ ${activeList[2].floodPenalties} lỗi` : '✅ An toàn'}
+                            </div>
+                          )}
                           {activeList[2].historyText && (
                             <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={activeList[2].historyText}>{activeList[2].historyText}</div>
                           )}
@@ -806,8 +917,15 @@ function HostProjectorPageInner() {
                         }}>
                           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                             <span style={{ fontWeight: 'bold', color: 'var(--text-muted)', width: '24px' }}>#{idx + 4}</span>
-                            <div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
                               <span style={{ fontWeight: 'bold' }}>{item.name}</span>
+                              {item.totalDistance != null && (
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px', marginTop: '4px' }}>
+                                  <span>🛣️ {item.totalDistance}m</span>
+                                  <span>⏱️ {item.totalTime}s</span>
+                                  <span>{item.floodPenalties > 0 ? `⚠️ ${item.floodPenalties} lỗi` : '✅ An toàn'}</span>
+                                </div>
+                              )}
                               {item.historyText && (
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                                   {item.historyText}

@@ -299,17 +299,37 @@ export default function RouteMapInner({
         });
       };
 
-      // Draw coordinates as tiny circles if enabled
-      const drawCoordinateDots = (geom: Waypoint[]) => {
+      // Draw coordinates as interactive clickable circle dots if enabled
+      const drawCoordinateDots = (geom: Waypoint[], routeName: string = '') => {
         if (!showCoordinates) return;
-        geom.forEach(pt => {
-          L.circleMarker([pt.lat, pt.lng], {
-            radius: 2,
+        geom.forEach((pt, idx) => {
+          const dotMarker = L.circleMarker([pt.lat, pt.lng], {
+            radius: 4.5,
             fillColor: color,
             color: '#ffffff',
-            weight: 0.5,
-            fillOpacity: 1.0
+            weight: 1.5,
+            fillOpacity: 0.95
           }).addTo(rGroup);
+
+          dotMarker.bindPopup(`
+            <div class="text-xs p-1 font-mono text-neutral-900 leading-normal" style="min-width: 170px;">
+              <strong class="block text-teal-600 font-sans font-bold text-xs mb-0.5">📍 Hạt tọa độ #${idx + 1}</strong>
+              ${routeName ? `<span class="block text-[11px] text-neutral-500 font-sans mb-1">${routeName}</span>` : ''}
+              <hr class="my-1 border-neutral-200" />
+              <b>Lat:</b> ${pt.lat}<br/>
+              <b>Lng:</b> ${pt.lng}<br/>
+              <div class="mt-1 pt-1 border-t border-neutral-100 flex items-center justify-between text-[10px] text-neutral-500 font-sans">
+                <span>Vị trí mảng (Index):</span>
+                <strong class="font-mono text-teal-600 text-xs">${idx}</strong>
+              </div>
+            </div>
+          `);
+
+          dotMarker.on('click', () => {
+            if (onMapClick) {
+              onMapClick(pt.lat, pt.lng);
+            }
+          });
         });
       };
 
@@ -340,7 +360,7 @@ export default function RouteMapInner({
           if (index >= route.geometry.length) {
             clearInterval(intervalId);
             // Draw points at coordinates if checked
-            drawCoordinateDots(route.geometry);
+            drawCoordinateDots(route.geometry, route.name);
             return;
           }
 
@@ -364,7 +384,7 @@ export default function RouteMapInner({
         ).addTo(rGroup);
 
         setupInteractiveRoute(polyline);
-        drawCoordinateDots(route.geometry);
+        drawCoordinateDots(route.geometry, route.name);
       }
     });
 
