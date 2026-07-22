@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-nav {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .text-overlay-gradient {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#00238a",
+                        "on-primary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#0033c2",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dde1ff",
+                        "outline-variant": "#c4c5d8",
+                        "on-tertiary-fixed": "#181c23",
+                        "surface-container-highest": "#e1e1f7",
+                        "tertiary-fixed": "#e0e2ec",
+                        "surface-container": "#edecff",
+                        "on-surface-variant": "#444655",
+                        "on-tertiary-container": "#fefcff",
+                        "tertiary-container": "#71747d",
+                        "on-secondary-fixed-variant": "#213ca6",
+                        "inverse-surface": "#2d2f40",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#7a91fe",
+                        "outline": "#747686",
+                        "on-primary-fixed": "#001258",
+                        "secondary-fixed-dim": "#b9c3ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#001257",
+                        "inverse-primary": "#b9c3ff",
+                        "inverse-on-surface": "#f0efff",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f4f2ff",
+                        "surface-variant": "#e1e1f7",
+                        "background": "#fbf8ff",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#595c64",
+                        "surface-tint": "#2a4edf",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#43474f",
+                        "surface-container-high": "#e6e6fd",
+                        "on-background": "#181a2a",
+                        "surface-dim": "#d8d8ef",
+                        "on-surface": "#181a2a",
+                        "primary-fixed": "#dee1ff",
+                        "tertiary-fixed-dim": "#c4c6d0",
+                        "primary-fixed-dim": "#b9c3ff",
+                        "secondary": "#3d55bf",
+                        "surface": "#fbf8ff",
+                        "primary-container": "#4666f7",
+                        "surface-bright": "#fbf8ff",
+                        "primary": "#264bdd",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "margin-mobile": "16px",
+                        "section-padding": "80px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "stack-md": "24px",
+                        "stack-sm": "12px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "fontWeight": "500" }],
+                        "headline-xl": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 z-50">
+<nav class="bg-white/95 dark:bg-inverse-surface/95 rounded-full mt-4 mx-auto w-fit shadow-lg backdrop-blur-md px-margin-mobile py-unit max-w-container-max flex justify-between items-center gap-stack-md">
+<div class="flex items-center gap-4">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-white text-[24px]">radar</span>
+</div>
+<span class="text-headline-md font-headline-md font-extrabold text-primary dark:text-inverse-primary hidden md:block">Mekong Pathfinder</span>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant hover:text-primary text-label-md font-label-md transition-colors duration-200" href="#">Giới thiệu</a>
+<a class="text-on-surface-variant hover:text-primary text-label-md font-label-md transition-colors duration-200" href="#">Demo</a>
+<a class="text-on-surface-variant hover:text-primary text-label-md font-label-md transition-colors duration-200" href="#">Trải nghiệm</a>
+<a class="text-primary dark:text-inverse-primary font-bold border-b-2 border-primary text-label-md font-label-md transition-colors duration-200" href="#">Thành tựu</a>
+<a class="text-on-surface-variant hover:text-primary text-label-md font-label-md transition-colors duration-200" href="#">Đội ngũ</a>
+<a class="text-on-surface-variant hover:text-primary text-label-md font-label-md transition-colors duration-200" href="#">Liên hệ</a>
+</div>
+<button class="bg-primary text-white px-6 py-2 rounded-full font-label-md text-label-md scale-95 active:scale-90 transition-transform hover:bg-primary/90">
+                Tải ứng dụng
+            </button>
+</nav>
+</header>
+<main class="pt-[140px] pb-section-padding">
+<div class="max-w-container-max mx-auto px-margin-mobile">
+<!-- Hero Header Section -->
+<div class="text-center mb-stack-lg animate-in fade-in slide-in-from-bottom-4 duration-700">
+<span class="text-primary font-bold tracking-[0.2em] text-label-md uppercase mb-4 block">THÀNH TỰU</span>
+<h1 class="text-headline-xl mb-6">
+                    Thành tựu &amp; <span class="text-primary">Truyền thông</span>
+</h1>
+<p class="text-on-surface-variant max-w-2xl mx-auto text-body-lg">
+                    Cập nhật những cột mốc nổi bật, bài viết chuyên sâu và tin tức báo chí mới nhất của Mekong Pathfinder.
+                </p>
+</div>
+<!-- Filter Pills -->
+<div class="flex justify-center mb-stack-lg">
+<div class="bg-surface-container-low rounded-full p-1.5 border border-outline-variant flex items-center gap-1">
+<button disabled class="px-6 md:px-10 py-2.5 rounded-full text-on-surface-variant/40 font-label-md text-label-md transition-all flex items-center gap-2 cursor-not-allowed" title="Tính năng đang phát triển">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+Thành tựu
+</button>
+<button class="px-6 md:px-10 py-2.5 rounded-full bg-primary text-white font-label-md text-label-md shadow-sm transition-all">Tin tức</button>
+<button disabled class="px-6 md:px-10 py-2.5 rounded-full text-on-surface-variant/40 font-label-md text-label-md transition-all flex items-center gap-2 cursor-not-allowed" title="Tính năng đang phát triển">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+Blog
+</button>
+</div>
+</div>
+<!-- Content Grid - Visual-Heavy Modern Layout -->
+<div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
+<!-- Featured Card 1 (Large) -->
+<article class="relative md:col-span-4 lg:col-span-4 aspect-[16/9] rounded-[32px] overflow-hidden group cursor-pointer shadow-xl hover:shadow-2xl transition-shadow duration-300">
+<a href="https://facebook.com/mekongpathfinder" target="_blank" class="absolute inset-0 z-20"></a>
+<img alt="Hoạt động nổi bật" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="../assets/images/activities-fanpage/post-01.png"/>
+<div class="absolute inset-0 text-overlay-gradient flex flex-col justify-end p-8 md:p-12 z-10 pointer-events-none">
+<div class="mb-4">
+<span class="bg-primary text-white px-4 py-1.5 rounded-full text-[12px] font-bold uppercase tracking-wider">TIN TỨC</span>
+</div>
+<span class="text-white/70 text-label-md mb-2">2026-07-22</span>
+<h3 class="text-white text-headline-xl mb-4 group-hover:text-primary-fixed transition-colors line-clamp-2">Hoạt động nổi bật của Mekong Pathfinder</h3>
+<p class="text-white/80 text-body-lg max-w-2xl hidden md:block line-clamp-2">Cập nhật những hoạt động, sự kiện và tin tức mới nhất từ hệ sinh thái Mekong Pathfinder.</p>
+</div>
+</article>
+<!-- Small Card 1 -->
+<article class="relative md:col-span-2 lg:col-span-2 aspect-[4/5] md:aspect-auto rounded-[32px] overflow-hidden group cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-300">
+<a href="https://facebook.com/mekongpathfinder" target="_blank" class="absolute inset-0 z-20"></a>
+<img alt="Sự kiện cộng đồng" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="../assets/images/activities-fanpage/post-02.png"/>
+<div class="absolute inset-0 text-overlay-gradient flex flex-col justify-end p-6 z-10 pointer-events-none">
+<div class="mb-3">
+<span class="bg-white/20 backdrop-blur-md text-white border border-white/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">SỰ KIỆN</span>
+</div>
+<span class="text-white/60 text-label-sm mb-1">2026-07-20</span>
+<h3 class="text-white text-headline-md line-clamp-2 group-hover:text-primary-fixed transition-colors">Kết nối cộng đồng ĐBSCL</h3>
+</div>
+</article>
+<!-- Small Card 2 -->
+<article class="relative md:col-span-2 lg:col-span-2 aspect-[4/5] md:aspect-auto rounded-[32px] overflow-hidden group cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-300">
+<a href="https://facebook.com/mekongpathfinder" target="_blank" class="absolute inset-0 z-20"></a>
+<img alt="Đối tác" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="../assets/images/activities-fanpage/post-03.png"/>
+<div class="absolute inset-0 text-overlay-gradient flex flex-col justify-end p-6 z-10 pointer-events-none">
+<div class="mb-3">
+<span class="bg-white/20 backdrop-blur-md text-white border border-white/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">HỢP TÁC</span>
+</div>
+<span class="text-white/60 text-label-sm mb-1">2026-07-18</span>
+<h3 class="text-white text-headline-md line-clamp-2 group-hover:text-primary-fixed transition-colors">Mở rộng mạng lưới đối tác</h3>
+</div>
+</article>
+<!-- Featured Card 2 (Medium/Wide) -->
+<article class="relative md:col-span-4 lg:col-span-4 aspect-[2/1] rounded-[32px] overflow-hidden group cursor-pointer shadow-xl hover:shadow-2xl transition-shadow duration-300">
+<a href="https://facebook.com/mekongpathfinder" target="_blank" class="absolute inset-0 z-20"></a>
+<img alt="Dự án số hóa" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="../assets/images/activities-fanpage/post-04.png"/>
+<div class="absolute inset-0 text-overlay-gradient flex flex-col justify-end p-8 z-10 pointer-events-none">
+<div class="mb-3">
+<span class="bg-primary text-white px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">CÔNG NGHỆ</span>
+</div>
+<span class="text-white/70 text-label-md mb-1">2026-07-15</span>
+<h3 class="text-white text-headline-lg mb-2 group-hover:text-primary-fixed transition-colors line-clamp-1">Khởi động chiến dịch số hóa tài nguyên</h3>
+<p class="text-white/80 text-body-md line-clamp-2 max-w-xl">Ứng dụng công nghệ bản đồ số để hỗ trợ bà con nông dân khu vực miền Tây.</p>
+</div>
+</article>
+<!-- Small Card 3 -->
+<article class="relative md:col-span-3 lg:col-span-3 aspect-[16/9] rounded-[32px] overflow-hidden group cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-300">
+<a href="https://facebook.com/mekongpathfinder" target="_blank" class="absolute inset-0 z-20"></a>
+<img alt="Kiến thức" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="../assets/images/activities-fanpage/post-05.png"/>
+<div class="absolute inset-0 text-overlay-gradient flex flex-col justify-end p-6 z-10 pointer-events-none">
+<div class="mb-3">
+<span class="bg-white/20 backdrop-blur-md text-white border border-white/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">KIẾN THỨC</span>
+</div>
+<span class="text-white/60 text-label-sm mb-1">2026-07-10</span>
+<h3 class="text-white text-headline-md line-clamp-2 group-hover:text-primary-fixed transition-colors">Chia sẻ kỹ năng số cho thanh niên</h3>
+</div>
+</article>
+<!-- Small Card 4 -->
+<article class="relative md:col-span-3 lg:col-span-3 aspect-[16/9] rounded-[32px] overflow-hidden group cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-300">
+<a href="https://facebook.com/mekongpathfinder" target="_blank" class="absolute inset-0 z-20"></a>
+<img alt="Tổng kết" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="../assets/images/activities-fanpage/post-06.png"/>
+<div class="absolute inset-0 text-overlay-gradient flex flex-col justify-end p-6 z-10 pointer-events-none">
+<div class="mb-3">
+<span class="bg-white/20 backdrop-blur-md text-white border border-white/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">TỔNG KẾT</span>
+</div>
+<span class="text-white/60 text-label-sm mb-1">2026-07-05</span>
+<h3 class="text-white text-headline-md line-clamp-2 group-hover:text-primary-fixed transition-colors">Điểm lại những chặng đường đã qua</h3>
+</div>
+</article>
+</div>
+<!-- Footer Indicator -->
+<div class="mt-stack-lg flex justify-center">
+<button class="flex items-center gap-2 px-8 py-3 rounded-full border border-primary text-primary font-bold text-label-md hover:bg-primary hover:text-white transition-all duration-300 group">
+                    Xem thêm bài viết
+                    <span class="material-symbols-outlined text-[20px] group-hover:translate-y-1 transition-transform">expand_more</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-background dark:bg-on-background border-t border-outline-variant">
+<div class="max-w-container-max mx-auto px-margin-mobile py-stack-lg flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="text-headline-sm font-headline-sm font-bold text-on-background dark:text-background">Mekong Pathfinder</span>
+<p class="text-on-surface-variant text-body-md text-label-sm font-label-sm">© 2024 Mekong Pathfinder. Tất cả quyền được bảo lưu.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-on-surface-variant hover:text-primary text-label-sm font-label-sm hover:underline transition-all" href="#">Điều khoản</a>
+<a class="text-on-surface-variant hover:text-primary text-label-sm font-label-sm hover:underline transition-all" href="#">Bảo mật</a>
+<a class="text-on-surface-variant hover:text-primary text-label-sm font-label-sm hover:underline transition-all" href="#">Liên hệ</a>
+</div>
+</div>
+</footer>
+<script>
+        // Intersection observer for fade-in animations on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-10');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('article').forEach(card => {
+            card.classList.add('opacity-0', 'translate-y-10', 'transition-all', 'duration-700');
+            observer.observe(card);
+        });
+    </script>
+</body></html>

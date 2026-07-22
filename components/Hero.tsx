@@ -499,7 +499,7 @@ export default function Hero() {
           <Link href="#download" className="btn-primary">
             ⬇ Tải ứng dụng
           </Link>
-          <Link href="#solution" className="btn-ghost">
+          <Link href="#product-demo" className="btn-ghost">
             Xem tính năng →
           </Link>
         </div>
